@@ -151,3 +151,45 @@ export async function decryptJson(payload: unknown, passphrase: string): Promise
     return null;
   }
 }
+
+export async function encryptBytes(payload: Uint8Array, passphrase: string): Promise<EncryptedPayloadV1> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const iterations = DEFAULT_PBKDF2_ITERATIONS;
+  const key = await deriveAesKeyPbkdf2(passphrase, salt, iterations);
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: asBufferSource(iv) }, key, asBufferSource(payload));
+
+  return {
+    version: 1,
+    kdf: 'pbkdf2-sha256',
+    iterations,
+    salt: toBase64(salt),
+    iv: toBase64(iv),
+    ciphertext: toBase64(new Uint8Array(ciphertext))
+  };
+}
+
+export async function decryptBytes(payload: unknown, passphrase: string): Promise<Uint8Array<ArrayBuffer> | null> {
+  try {
+    const parsed = parseEncryptedPayload(payload);
+    if (!parsed) {
+      return null;
+    }
+
+    const salt = fromBase64(parsed.salt);
+    const iv = fromBase64(parsed.iv);
+    const data = fromBase64(parsed.ciphertext);
+    const key =
+      'version' in parsed
+        ? await deriveAesKeyPbkdf2(passphrase, salt, parsed.iterations)
+        : await deriveAesKeyLegacy(passphrase, salt);
+    const plaintext = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: asBufferSource(iv) },
+      key,
+      asBufferSource(data)
+    );
+    return new Uint8Array(plaintext);
+  } catch {
+    return null;
+  }
+}

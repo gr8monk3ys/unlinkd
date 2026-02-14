@@ -12,14 +12,19 @@ A local-first MVP for personal digital disappearance workflows and OSINT self-sc
 
 ## MVP Features
 
+- Encrypted local vault (personas, identifiers, accounts, connectors, findings).
+- Persona management and cross-persona reuse policy warnings.
 - Identifier ingestion with consent-aware records.
 - Input validation and normalization for identifier values.
-- Encrypted local persistence for identifiers with retention control.
 - Policy checks for duplicate identifiers and maximum ingestion limits.
 - Consent-bounded exposure graph modeling.
-- Hash-chained local audit trail for ingestion decisions.
+- Hash-chained, encrypted local audit trail (integrity verifiable).
 - Risk finding prioritization by threat tier.
-- Connector workflow transition validation.
+- Connector catalog + workflow transition validation.
+- Encrypted evidence vault (IndexedDB) for files and notes.
+- Exportable markdown reports (redacted vs full).
+- Encrypted backup export/import (vault + audit + evidence ciphertext-only).
+- Local heuristic scan to generate initial findings.
 
 ## Configuration
 
@@ -30,7 +35,7 @@ cp .env.example .env
 ```
 
 - `VITE_MAX_IDENTIFIERS`: maximum number of identifiers that can be stored locally.
-- `VITE_IDENTIFIER_RETENTION_DAYS`: retention window for local identifier storage.
+- `VITE_IDENTIFIER_RETENTION_DAYS`: legacy identifier storage retention (not currently enforced by the vault model).
 
 ## Quick Start
 
@@ -87,8 +92,14 @@ Builds a local graph from consented identifiers and inferred linkage edges.
 ### `validateIdentifierInput(type, value)`
 Validates identifier type/value pairs and returns normalized values for safe ingestion.
 
-### `loadIdentifiers(retentionDays, passphrase)` / `saveIdentifiers(identifiers, passphrase)`
-Loads and stores local identifier records with retention-aware, encrypted browser storage.
+### `unlockVault(passphrase)` / `saveVault(state, passphrase)`
+Unlocks and persists the encrypted vault state used by the UI.
+
+### `exportBackup()` / `importBackup(payload)`
+Exports and imports ciphertext-only backups (vault + audit + evidence payloads).
+
+### `putEvidencePayload(id, payload)` / `getEvidencePayload(id)`
+Stores and retrieves encrypted evidence payloads from IndexedDB.
 
 ### `appendAuditRecord(action, details)` / `verifyAuditChain()`
 Appends hash-chained audit entries and verifies chain integrity.

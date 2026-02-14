@@ -73,10 +73,12 @@ export function isIdentifierArray(value: unknown): value is Identifier[] {
   const schema = z.array(
     z.object({
       id: z.string(),
+      personaId: z.string().optional(),
       type: identifierTypeSchema,
       value: z.string(),
       sensitivity: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-      consent: z.boolean()
+      consent: z.boolean(),
+      createdAt: z.string().optional()
     })
   );
 

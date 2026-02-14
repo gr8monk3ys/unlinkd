@@ -1,6 +1,22 @@
 import { decryptJson, encryptJson } from './crypto';
 
-export type AuditAction = 'identifier_added' | 'identifier_rejected';
+export const auditActions = [
+  'identifier_added',
+  'identifier_rejected',
+  'persona_created',
+  'account_added',
+  'account_imported',
+  'connector_added',
+  'connector_state_changed',
+  'connector_rechecked',
+  'evidence_added',
+  'evidence_deleted',
+  'scan_ran',
+  'vault_exported',
+  'vault_imported'
+] as const;
+
+export type AuditAction = (typeof auditActions)[number];
 
 export interface AuditRecord {
   id: string;
@@ -24,7 +40,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isAuditAction(value: unknown): value is AuditAction {
-  return value === 'identifier_added' || value === 'identifier_rejected';
+  return typeof value === 'string' && (auditActions as readonly string[]).includes(value);
 }
 
 function isAuditRecord(value: unknown): value is AuditRecord {
@@ -180,3 +196,42 @@ export async function verifyAuditChain(passphrase: string): Promise<boolean> {
   return true;
 }
 
+export function getAuditStorageKey(): string {
+  return auditStorageKey;
+}
+
+export function getRawAuditCiphertext(): string | null {
+  try {
+    return localStorage.getItem(auditStorageKey);
+  } catch {
+    return null;
+  }
+}
+
+export function setRawAuditCiphertext(value: string): void {
+  // Used for backup restore.
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error('Invalid audit payload.');
+  }
+
+  if (!isRecord(parsed)) {
+    throw new Error('Invalid audit payload.');
+  }
+
+  try {
+    localStorage.setItem(auditStorageKey, value);
+  } catch {
+    throw new Error('Unable to persist audit log.');
+  }
+}
+
+export function clearAuditCiphertext(): void {
+  try {
+    localStorage.removeItem(auditStorageKey);
+  } catch {
+    // ignore
+  }
+}
