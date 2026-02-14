@@ -52,21 +52,28 @@ npm audit --audit-level=moderate
 
 This app is a static Vite build (`dist/`) and is suitable for Cloudflare Pages.
 
-```bash
-# Verify auth
-npx wrangler whoami
-
-# One-time project setup (pick a project name; example uses "unlinkd")
-npx wrangler pages project create unlinkd
-
-# Build + deploy
-npm run build
-npx wrangler pages deploy ./dist --project-name unlinkd
-```
-
 Notes:
 - SPA routing and security headers are configured via `public/_redirects` and `public/_headers`.
 - Set `VITE_MAX_IDENTIFIERS` / `VITE_IDENTIFIER_RETENTION_DAYS` in your Pages project build environment if you want non-default values.
+
+### Recommended: Git Integration (No API Tokens)
+
+Cloudflare Pages can connect to GitHub directly via the dashboard (no `CLOUDFLARE_API_TOKEN` needed).
+
+1. Cloudflare Dashboard → Workers & Pages → **Create application** → **Pages** → **Connect to Git**
+2. Select repo: `gr8monk3ys/unlinkd`
+3. Build settings:
+   - Build command: `npm run build`
+   - Build output directory: `dist`
+   - Production branch: `main`
+
+### Manual: Wrangler CLI (OAuth)
+
+```bash
+npx wrangler whoami
+npm run build
+npx wrangler pages deploy ./dist --project-name unlinkd
+```
 
 ## CI
 
