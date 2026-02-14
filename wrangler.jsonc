@@ -1,0 +1,6 @@
+{
+  // Cloudflare Pages configuration. Used for Functions/bindings later if needed.
+  "name": "unlinkd",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-02-14"
+}

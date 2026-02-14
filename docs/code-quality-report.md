@@ -4,9 +4,22 @@
 Assessment of the current TypeScript/React MVP codebase for maintainability, reliability, security posture, testing, and delivery readiness.
 
 ## Executive summary
-- **Overall readiness:** **Hardened MVP / pre-production**.
-- **Strengths:** strict lint/test/build + dependency audit gates, CI workflow, consent-safe graphing, runtime validation, encrypted retention-aware persistence, and a hash-chained local audit trail.
+- **Overall readiness (Feb 14, 2026):** **Hardened MVP / pre-production**.
+- **Strengths:** strict lint/test/build + dependency audit gates, CI workflow, consent-safe graphing, runtime validation/normalization, encrypted retention-aware persistence, and an encrypted + integrity-checked local audit trail.
 - **Top blockers before production:** no trusted server-side policy execution boundary and no incident response automation.
+
+## Recent hardening (Feb 14, 2026)
+- **Audit log no longer stores plaintext PII at rest**
+  - Audit records are now encrypted before being persisted to browser storage, and "identifier_added" details are hashed/redacted.
+- **Passphrase-based encryption strengthened**
+  - AES keys are now derived via PBKDF2 (SHA-256) instead of a single SHA-256 digest of passphrase material.
+- **Local dev ergonomics improved**
+  - Added `.nvmrc` (Node 20) and `package.json` `engines` guidance.
+  - Tests are resilient to Node versions that provide a non-Storage `globalThis.localStorage`.
+- **Input normalization improved**
+  - Phone values normalize to digits (with optional leading `+`) for better dedupe/graph inference.
+- **License metadata aligned**
+  - `package.json` license string now matches the repo `LICENSE`.
 
 ## What is working well
 1. **Quality gates are present and passing**
@@ -20,7 +33,8 @@ Assessment of the current TypeScript/React MVP codebase for maintainability, rel
 5. **Encrypted local data lifecycle controls**
    - Local persistence uses encrypted envelopes and retention checks with passphrase-based unlock flow.
 6. **Auditability improved**
-   - Identifier decisions are recorded in a hash-chained local audit log with verification support.
+   - Identifier decisions are recorded in a hash-chained audit log with verification support.
+   - Audit records are encrypted at rest (stored as encrypted envelopes).
 
 ## Remaining key risks and gaps
 
@@ -47,10 +61,10 @@ Assessment of the current TypeScript/React MVP codebase for maintainability, rel
 ## Production readiness scorecard
 - **Code correctness:** 8.2/10
 - **Test depth:** 6.8/10
-- **Security posture:** 6.2/10
-- **Privacy posture:** 7/10
+- **Security posture:** 7.2/10
+- **Privacy posture:** 7.8/10
 - **Operational readiness:** 6.2/10
-- **Overall:** **6.9/10**
+- **Overall:** **7.3/10**
 
 ## 30-day remediation plan
 1. **Week 1 (must-do):**

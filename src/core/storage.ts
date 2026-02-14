@@ -34,17 +34,20 @@ function fromEnvelope(parsed: unknown, retentionDays: number): Identifier[] {
 }
 
 export async function loadIdentifiers(retentionDays: number, passphrase: string): Promise<Identifier[] | null> {
-  const raw = localStorage.getItem(storageKey);
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(storageKey);
+  } catch {
+    return null;
+  }
+
   if (!raw) {
     return [];
   }
 
   try {
     const parsed: unknown = JSON.parse(raw);
-    const decrypted = await decryptJson(
-      parsed as { salt: string; iv: string; ciphertext: string },
-      passphrase
-    );
+    const decrypted = await decryptJson(parsed, passphrase);
 
     if (decrypted === null) {
       return null;
@@ -64,5 +67,9 @@ export async function saveIdentifiers(identifiers: Identifier[], passphrase: str
   };
 
   const encryptedPayload = await encryptJson(payload, passphrase);
-  localStorage.setItem(storageKey, JSON.stringify(encryptedPayload));
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(encryptedPayload));
+  } catch {
+    throw new Error('Unable to persist identifiers.');
+  }
 }

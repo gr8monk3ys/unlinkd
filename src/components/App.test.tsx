@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { saveIdentifiers } from '../core/storage';
 import { App } from './App';
@@ -47,6 +47,8 @@ describe('App', () => {
     fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'username' } });
     fireEvent.change(screen.getByLabelText('Value'), { target: { value: 'alias' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add Identifier' }));
+    expect(await screen.findByText('username: alias')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Add Identifier' })).not.toBeDisabled());
     fireEvent.change(screen.getByLabelText('Value'), { target: { value: 'alias' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add Identifier' }));
 

@@ -48,6 +48,26 @@ npm run build
 npm audit --audit-level=moderate
 ```
 
+## Deploy (Cloudflare Pages)
+
+This app is a static Vite build (`dist/`) and is suitable for Cloudflare Pages.
+
+```bash
+# Verify auth
+npx wrangler whoami
+
+# One-time project setup (pick a project name; example uses "unlinkd")
+npx wrangler pages project create unlinkd
+
+# Build + deploy
+npm run build
+npx wrangler pages deploy ./dist --project-name unlinkd
+```
+
+Notes:
+- SPA routing and security headers are configured via `public/_redirects` and `public/_headers`.
+- Set `VITE_MAX_IDENTIFIERS` / `VITE_IDENTIFIER_RETENTION_DAYS` in your Pages project build environment if you want non-default values.
+
 ## CI
 
 GitHub Actions workflow (`.github/workflows/ci.yml`) runs lint, tests, build, and dependency audit checks for push and pull request events.

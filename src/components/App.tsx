@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { appendAuditRecord, getAuditRecords, verifyAuditChain } from '../core/audit';
+import { useMemo, useRef, useState } from 'react';
+import { appendAuditRecord, loadAuditRecords, verifyAuditChain } from '../core/audit';
 import { getAppConfig } from '../core/config';
 import { buildExposureGraph } from '../core/graph';
 import { canAddIdentifier, hasDuplicateIdentifier } from '../core/policy';
@@ -17,6 +17,13 @@ const seedFindings: RiskFinding[] = [
   { id: 'f-3', title: 'Username reused across accounts', harm: 6, exploitability: 6, tier: 'moderate' }
 ];
 
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((item) => item.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 function createIdentifier(type: IdentifierType, value: string): Identifier {
   return {
     id: crypto.randomUUID(),
@@ -28,6 +35,8 @@ function createIdentifier(type: IdentifierType, value: string): Identifier {
 }
 
 export function App(): React.JSX.Element {
+  const busyRef = useRef(false);
+  const [isBusy, setIsBusy] = useState(false);
   const [type, setType] = useState<IdentifierType>('email');
   const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -35,67 +44,138 @@ export function App(): React.JSX.Element {
   const [passphrase, setPassphrase] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [identifiers, setIdentifiers] = useState<Identifier[]>([]);
-  const [auditCount, setAuditCount] = useState<number>(() => getAuditRecords().length);
+  const [auditCount, setAuditCount] = useState<number>(0);
 
   const graph = useMemo(() => buildExposureGraph(identifiers), [identifiers]);
   const prioritizedFindings = useMemo(() => sortFindingsByPriority(seedFindings), []);
 
   async function unlockVault(): Promise<void> {
-    if (!passphrase) {
-      setError('Passphrase is required to unlock storage.');
+    if (busyRef.current) {
       return;
     }
 
-    const loaded = await loadIdentifiers(config.retentionDays, passphrase);
-    if (loaded === null) {
-      setError('Unable to unlock storage with the provided passphrase.');
-      return;
-    }
+    busyRef.current = true;
+    setIsBusy(true);
 
-    setIdentifiers(loaded);
-    setIsUnlocked(true);
-    setError(null);
+    try {
+      if (!passphrase) {
+        setError('Passphrase is required to unlock storage.');
+        return;
+      }
+
+      const loaded = await loadIdentifiers(config.retentionDays, passphrase);
+      if (loaded === null) {
+        setError('Unable to unlock storage with the provided passphrase.');
+        return;
+      }
+
+      setIdentifiers(loaded);
+      setIsUnlocked(true);
+      setError(null);
+
+      const auditRecords = await loadAuditRecords(passphrase);
+      if (auditRecords === null) {
+        setAuditError('Unable to unlock audit log with the provided passphrase.');
+      } else {
+        setAuditCount(auditRecords.length);
+        setAuditError(null);
+      }
+    } finally {
+      busyRef.current = false;
+      setIsBusy(false);
+    }
   }
 
   async function addIdentifier(): Promise<void> {
-    if (!isUnlocked) {
-      setError('Unlock storage before adding identifiers.');
+    if (busyRef.current) {
       return;
     }
 
-    const result = validateIdentifierInput(type, value);
-    if (!result.ok || !result.normalizedType) {
-      setError(result.error);
-      await appendAuditRecord('identifier_rejected', result.error ?? 'invalid input');
-      setAuditCount(getAuditRecords().length);
-      return;
-    }
+    busyRef.current = true;
+    setIsBusy(true);
 
-    if (hasDuplicateIdentifier(identifiers, result.normalizedType, result.normalizedValue)) {
-      setError('This identifier already exists.');
-      await appendAuditRecord('identifier_rejected', 'duplicate identifier');
-      setAuditCount(getAuditRecords().length);
-      return;
-    }
+    try {
+      if (!isUnlocked) {
+        setError('Unlock storage before adding identifiers.');
+        return;
+      }
 
-    if (!canAddIdentifier(identifiers, config.maxIdentifiers)) {
-      setError(`Identifier limit reached (${config.maxIdentifiers}).`);
-      await appendAuditRecord('identifier_rejected', 'identifier limit reached');
-      setAuditCount(getAuditRecords().length);
-      return;
-    }
+      const result = validateIdentifierInput(type, value);
+      if (!result.ok || !result.normalizedType) {
+        setError(result.error);
+        const record = await appendAuditRecord('identifier_rejected', result.error ?? 'invalid input', passphrase);
+        if (!record) {
+          setAuditError('Unable to write audit record.');
+        } else {
+          setAuditCount((count) => count + 1);
+          setAuditError(null);
+        }
+        return;
+      }
 
-    const next = [...identifiers, createIdentifier(result.normalizedType, result.normalizedValue)];
-    setIdentifiers(next);
-    await saveIdentifiers(next, passphrase);
-    setValue('');
-    setError(null);
-    await appendAuditRecord('identifier_added', `${result.normalizedType}:${result.normalizedValue}`);
-    setAuditCount(getAuditRecords().length);
+      if (hasDuplicateIdentifier(identifiers, result.normalizedType, result.normalizedValue)) {
+        setError('This identifier already exists.');
+        const record = await appendAuditRecord('identifier_rejected', 'duplicate identifier', passphrase);
+        if (!record) {
+          setAuditError('Unable to write audit record.');
+        } else {
+          setAuditCount((count) => count + 1);
+          setAuditError(null);
+        }
+        return;
+      }
+
+      if (!canAddIdentifier(identifiers, config.maxIdentifiers)) {
+        setError(`Identifier limit reached (${config.maxIdentifiers}).`);
+        const record = await appendAuditRecord('identifier_rejected', 'identifier limit reached', passphrase);
+        if (!record) {
+          setAuditError('Unable to write audit record.');
+        } else {
+          setAuditCount((count) => count + 1);
+          setAuditError(null);
+        }
+        return;
+      }
+
+      const next = [...identifiers, createIdentifier(result.normalizedType, result.normalizedValue)];
+
+      try {
+        await saveIdentifiers(next, passphrase);
+      } catch (caught) {
+        const message = caught instanceof Error ? caught.message : 'Unable to persist identifiers.';
+        setError(message);
+        return;
+      }
+
+      setIdentifiers(next);
+      setValue('');
+      setError(null);
+
+      const fingerprint = await sha256Hex(`${result.normalizedType}:${result.normalizedValue}`);
+      const record = await appendAuditRecord(
+        'identifier_added',
+        `${result.normalizedType}:${fingerprint}`,
+        passphrase
+      );
+      if (!record) {
+        setAuditError('Unable to write audit record.');
+      } else {
+        setAuditCount((count) => count + 1);
+        setAuditError(null);
+      }
+    } finally {
+      busyRef.current = false;
+      setIsBusy(false);
+    }
   }
 
   async function handleVerifyAuditChain(): Promise<void> {
-    const isValid = await verifyAuditChain();
+    if (!isUnlocked) {
+      setAuditError('Unlock storage before verifying the audit chain.');
+      return;
+    }
+
+    const isValid = await verifyAuditChain(passphrase);
     setAuditError(isValid ? null : 'Audit chain verification failed.');
   }
 
@@ -113,7 +193,7 @@ export function App(): React.JSX.Element {
           onChange={(event) => setPassphrase(event.target.value)}
           placeholder="enter passphrase"
         />
-        <button type="button" onClick={() => void unlockVault()}>
+        <button type="button" onClick={() => void unlockVault()} disabled={isBusy}>
           Unlock Storage
         </button>
         <p>{isUnlocked ? 'Storage unlocked' : 'Storage locked'}</p>
@@ -135,7 +215,7 @@ export function App(): React.JSX.Element {
           onChange={(event) => setValue(event.target.value)}
           placeholder="enter identifier"
         />
-        <button type="button" onClick={() => void addIdentifier()}>
+        <button type="button" onClick={() => void addIdentifier()} disabled={isBusy}>
           Add Identifier
         </button>
         {error ? <p role="alert">{error}</p> : null}
@@ -153,7 +233,7 @@ export function App(): React.JSX.Element {
       <section>
         <h2>Audit Trail</h2>
         <p>{`Entries: ${auditCount}`}</p>
-        <button type="button" onClick={() => void handleVerifyAuditChain()}>
+        <button type="button" onClick={() => void handleVerifyAuditChain()} disabled={isBusy}>
           Verify Audit Chain
         </button>
         {auditError ? <p role="status">{auditError}</p> : null}
