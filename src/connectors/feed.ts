@@ -177,7 +177,11 @@ export async function fetchConnectorFeed(options: {
     signature = null;
   }
 
-  if (signature && options.publicKeyBase64) {
+  if (options.publicKeyBase64) {
+    if (!signature) {
+      throw new Error('Connector feed signature is missing.');
+    }
+
     verified = await verifySignature(new TextEncoder().encode(jsonText), signature, options.publicKeyBase64);
     if (!verified) {
       throw new Error('Connector feed signature verification failed.');

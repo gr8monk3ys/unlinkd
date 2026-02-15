@@ -83,8 +83,12 @@ function downloadTextFile(filename: string, content: string): void {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  // Allow the browser to start the download before revoking the blob URL.
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 function downloadJsonFile(filename: string, value: unknown): void {

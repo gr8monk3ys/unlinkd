@@ -6,7 +6,7 @@ Assessment of the current TypeScript/React MVP codebase for maintainability, rel
 ## Executive summary
 - **Overall readiness (Feb 15, 2026):** **Pilot-ready local-first app** (still not “enterprise production”).
 - **Strengths:** strict `lint`/`test`/`build` gates, consent-safe graphing, runtime validation/normalization, encrypted vault + encrypted evidence store, encrypted backup/export, and an encrypted + integrity-checked local audit trail.
-- **Top blockers before broader production:** limited connector coverage/content governance, no browser-level e2e coverage for highest-value workflows, and no cross-device sync strategy (by design today).
+- **Top blockers before broader production:** limited connector coverage/content governance, e2e coverage needs expansion (initial smoke exists), and no cross-device sync strategy (by design today).
 
 ## Recent hardening (Feb 14, 2026)
 - **Encrypted “vault” state added (localStorage)**
@@ -52,9 +52,9 @@ Assessment of the current TypeScript/React MVP codebase for maintainability, rel
 - **Recommendation:** treat connectors like content: review/QA, provenance, versioning, and a publishing cadence. Expand the catalog to cover top brokers and the most-used account providers first.
 
 ### 2) Limited integration/e2e coverage (Medium)
-- Tests are primarily unit/component level.
-- **Impact:** cross-module workflow regressions may go undetected (unlock → import → evidence → report).
-- **Recommendation:** add browser-level e2e tests for key journeys (unlock, connector lifecycle, evidence capture/import, report export, backup/restore).
+- Playwright e2e smoke tests exist, but coverage is still light relative to end-to-end risk.
+- **Impact:** cross-module workflow regressions may slip through (unlock → import → evidence → report).
+- **Recommendation:** expand browser-level e2e tests for key journeys (unlock, connectors, evidence upload/import, report export, backup/restore).
 
 ### 3) Local-agent hardening + UX (Medium)
 - Agent is intentionally local-only but still needs hardening and UX polish (packaging, versioning, clearer error reporting, and a minimal “trust boundary” story for users).
@@ -76,7 +76,7 @@ Assessment of the current TypeScript/React MVP codebase for maintainability, rel
 
 ## 30-day remediation plan
 1. **Week 1 (must-do):**
-   - Add browser-level e2e test coverage for unlock + connectors + evidence + report + backup flows.
+   - Expand browser-level e2e test coverage for unlock + connectors + evidence + report + backup flows.
    - Add scheduled dependency update checks in CI.
 2. **Week 2:**
    - Expand connector catalog coverage and establish publishing/review workflow for feed updates.
