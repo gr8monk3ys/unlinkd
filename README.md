@@ -21,10 +21,13 @@ A local-first MVP for personal digital disappearance workflows and OSINT self-sc
 - Hash-chained, encrypted local audit trail (integrity verifiable).
 - Risk finding prioritization by threat tier.
 - Connector catalog + workflow transition validation.
+- Connector catalog update feed (signed) + in-app update/import.
 - Encrypted evidence vault (IndexedDB) for files and notes.
 - Exportable markdown reports (redacted vs full).
 - Encrypted backup export/import (vault + audit + evidence ciphertext-only).
 - Local heuristic scan to generate initial findings.
+- Account discovery imports (password manager CSV + mailbox discovery).
+- Agent job export/import hooks for local browser automation.
 
 ## Configuration
 
@@ -36,6 +39,8 @@ cp .env.example .env
 
 - `VITE_MAX_IDENTIFIERS`: maximum number of identifiers that can be stored locally.
 - `VITE_IDENTIFIER_RETENTION_DAYS`: legacy identifier storage retention (not currently enforced by the vault model).
+- `VITE_CONNECTOR_FEED_URL`: connector catalog feed URL (default: `/connectors/catalog.v1.json`).
+- `VITE_CONNECTOR_FEED_PUBKEY`: base64 Ed25519 public key for verifying the feed signature.
 
 ## Quick Start
 
@@ -83,6 +88,45 @@ npx wrangler pages deploy ./dist --project-name unlinkd
 ## CI
 
 GitHub Actions workflow (`.github/workflows/ci.yml`) runs lint, tests, build, and dependency audit checks for push and pull request events.
+
+## Connector Catalog Feed
+
+The app can fetch a signed connector catalog feed from `public/connectors/` and cache it locally.
+
+To publish a new feed version:
+
+```bash
+npm run connectors:keygen   # one-time, writes .secrets/connector-feed-key.json (DO NOT COMMIT)
+npm run connectors:publish -- --version 2026-02-15
+```
+
+Commit the updated `public/connectors/catalog.v1.json` + `public/connectors/catalog.v1.sig`.
+
+## Local Agent (Playwright)
+
+The optional local agent runs Playwright on your machine to automate connector steps and capture encrypted evidence payloads (for example screenshots). Nothing is uploaded to a server; the agent outputs JSON you import back into the web app.
+
+1. In the app, add a connector instance that has agent steps and click **Export Agent Job**.
+2. Run the agent locally:
+
+```bash
+cd agent
+npm install
+npm run install:browsers
+
+export UNLINKD_PASSPHRASE="your-vault-passphrase"
+node src/cli.mjs run /path/to/unlinkd-agent-job.json --set targetUrl=https://example.com --out results.json
+```
+
+3. In the app, use **Import Agent Results (JSON)** to attach the evidence to the connector instance.
+
+Mailbox discovery for large `.mbox` files (generates an accounts CSV you can import in the app):
+
+```bash
+cd agent
+npm install
+node src/cli.mjs mbox-discover /path/to/mailbox.mbox --out accounts.csv --max-messages 50000
+```
 
 ## API Notes
 

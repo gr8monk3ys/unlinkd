@@ -1,6 +1,9 @@
 import type { ConnectorDefinition } from '../core/types';
 
-export const connectorCatalog: ConnectorDefinition[] = [
+export const builtinConnectorCatalogVersion = 'builtin-2026-02-14';
+
+// Small builtin fallback so the app still works if the connector feed can't be loaded.
+export const builtinConnectorCatalog: ConnectorDefinition[] = [
   {
     id: 'broker-whitepages',
     name: 'Whitepages (Opt-out)',
@@ -29,7 +32,7 @@ export const connectorCatalog: ConnectorDefinition[] = [
         type: 'manual',
         title: 'Verify removal',
         instructions:
-          'Re-check the listing URL(s). If still present, record the current status and escalate using the provider’s support channel.',
+          "Re-check the listing URL(s). If still present, record the current status and escalate using the provider's support channel.",
         evidenceHint: 'Before/after screenshots'
       }
     ]
@@ -86,15 +89,27 @@ export const connectorCatalog: ConnectorDefinition[] = [
         id: 'delete',
         type: 'manual',
         title: 'Delete or deactivate (if desired)',
-        instructions:
-          'Use first-party deletion/deactivation workflows. Capture proof and schedule a recheck.',
+        instructions: 'Use first-party deletion/deactivation workflows. Capture proof and schedule a recheck.',
         evidenceHint: 'Deletion confirmation'
       }
     ]
   }
 ];
 
-export function getConnectorDefinition(connectorId: string): ConnectorDefinition | null {
-  return connectorCatalog.find((connector) => connector.id === connectorId) ?? null;
+export function mergeConnectorCatalogs(
+  builtin: ConnectorDefinition[],
+  overrides: ConnectorDefinition[]
+): ConnectorDefinition[] {
+  const merged = new Map<string, ConnectorDefinition>();
+  builtin.forEach((def) => merged.set(def.id, def));
+  overrides.forEach((def) => merged.set(def.id, def));
+  return [...merged.values()].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export function getConnectorDefinition(
+  connectorId: string,
+  catalog: ConnectorDefinition[]
+): ConnectorDefinition | null {
+  return catalog.find((connector) => connector.id === connectorId) ?? null;
 }
 

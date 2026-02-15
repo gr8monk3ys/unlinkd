@@ -3,3 +3,6 @@ dist/
 coverage/
 .vite/
 .wrangler/
+.secrets/
+agent/node_modules/
+agent/dist/

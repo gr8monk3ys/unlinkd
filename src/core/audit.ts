@@ -7,10 +7,13 @@ export const auditActions = [
   'account_added',
   'account_imported',
   'connector_added',
+  'connector_catalog_updated',
   'connector_state_changed',
   'connector_rechecked',
   'evidence_added',
   'evidence_deleted',
+  'agent_job_exported',
+  'agent_results_imported',
   'scan_ran',
   'vault_exported',
   'vault_imported'

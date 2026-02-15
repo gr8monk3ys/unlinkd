@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { appendAuditRecord, loadAuditRecords, verifyAuditChain } from '../core/audit';
+import { createAgentJobV1, parseAgentResultsV1 } from '../core/agent';
 import { exportBackup, importBackup, wipeAllData } from '../core/backup';
 import { getAppConfig } from '../core/config';
 import { decryptBytes, encryptBytes } from '../core/crypto';
@@ -25,14 +26,31 @@ import { validateIdentifierInput } from '../core/validation';
 import { canTransition, nextStates } from '../core/workflow';
 import { createEmptyVault, saveVault, unlockVault } from '../core/vault';
 import type { VaultStateV1 } from '../core/vault';
-import { connectorCatalog, getConnectorDefinition } from '../connectors/catalog';
+import {
+  builtinConnectorCatalog,
+  builtinConnectorCatalogVersion,
+  getConnectorDefinition,
+  mergeConnectorCatalogs
+} from '../connectors/catalog';
+import {
+  fetchConnectorFeed,
+  loadCachedConnectorFeed,
+  parseConnectorCatalogFeedV1,
+  parseConnectorDefinitions,
+  saveCachedConnectorFeed
+} from '../connectors/feed';
 import { buildMarkdownReport } from '../core/report';
+import { discoverAccountsFromMbox, parseAccountsCsv } from '../core/import/accounts';
 
 type Tab = 'dashboard' | 'personas' | 'identifiers' | 'accounts' | 'connectors' | 'findings' | 'report' | 'backup';
 
 const identifierTypes: IdentifierType[] = ['email', 'phone', 'username', 'address', 'legal_name', 'device'];
 const accountStatuses: AccountStatus[] = ['active', 'unused', 'removed', 'unknown'];
 const config = getAppConfig();
+
+const connectorFeedUrl = import.meta.env.VITE_CONNECTOR_FEED_URL ?? '/connectors/catalog.v1.json';
+const connectorFeedPublicKeyBase64 =
+  import.meta.env.VITE_CONNECTOR_FEED_PUBKEY ?? 'UVJ6F12bTc60CZnoJUCHx+woHzUmAHNPPE0LXoE9xHw=';
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -77,8 +95,8 @@ function activePersona(vault: VaultStateV1): Persona {
   return vault.personas.find((persona) => persona.id === vault.activePersonaId) ?? vault.personas[0]!;
 }
 
-function connectorName(connectorId: string): string {
-  return connectorCatalog.find((connector) => connector.id === connectorId)?.name ?? connectorId;
+function connectorName(connectorId: string, catalog: ConnectorDefinition[]): string {
+  return catalog.find((connector) => connector.id === connectorId)?.name ?? connectorId;
 }
 
 function dueConnectors(instances: ConnectorInstance[]): ConnectorInstance[] {
@@ -93,120 +111,6 @@ function dueConnectors(instances: ConnectorInstance[]): ConnectorInstance[] {
   });
 }
 
-function parseCsvLine(line: string): string[] {
-  const fields: string[] = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-
-    if (inQuotes) {
-      if (char === '"') {
-        const next = line[index + 1];
-        if (next === '"') {
-          current += '"';
-          index += 1;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        current += char;
-      }
-      continue;
-    }
-
-    if (char === ',') {
-      fields.push(current.trim());
-      current = '';
-      continue;
-    }
-
-    if (char === '"') {
-      inQuotes = true;
-      continue;
-    }
-
-    current += char;
-  }
-
-  fields.push(current.trim());
-  return fields;
-}
-
-function normalizeHeader(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-function findColumn(headers: string[], variants: string[]): number {
-  const normalized = headers.map(normalizeHeader);
-  for (const variant of variants) {
-    const index = normalized.findIndex((header) => header === variant || header.includes(variant));
-    if (index !== -1) {
-      return index;
-    }
-  }
-  return -1;
-}
-
-function normalizeAccountStatus(value: string): AccountStatus {
-  const normalized = value.trim().toLowerCase();
-  if (normalized === 'active' || normalized === 'unused' || normalized === 'removed' || normalized === 'unknown') {
-    return normalized;
-  }
-  if (normalized === 'deleted' || normalized === 'deactivated' || normalized === 'closed') {
-    return 'removed';
-  }
-  return 'unknown';
-}
-
-function parseAccountsCsv(text: string): { rows: Array<Pick<Account, 'service' | 'username' | 'url' | 'status'>>; errors: string[] } {
-  const lines = text
-    .split(/\r?\n/u)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-
-  if (lines.length === 0) {
-    return { rows: [], errors: ['CSV is empty.'] };
-  }
-
-  const header = parseCsvLine(lines[0]!);
-  const serviceIndex = findColumn(header, ['service', 'site', 'provider', 'app', 'name']);
-  const usernameIndex = findColumn(header, ['username', 'user', 'login', 'account']);
-  const urlIndex = findColumn(header, ['url', 'website', 'link', 'login_url']);
-  const statusIndex = findColumn(header, ['status', 'state']);
-
-  const errors: string[] = [];
-  if (serviceIndex === -1 || usernameIndex === -1) {
-    errors.push('CSV must include columns for service and username.');
-    return { rows: [], errors };
-  }
-
-  const rows: Array<Pick<Account, 'service' | 'username' | 'url' | 'status'>> = [];
-  for (let index = 1; index < lines.length; index += 1) {
-    const line = lines[index]!;
-    const fields = parseCsvLine(line);
-
-    const service = (fields[serviceIndex] ?? '').trim();
-    const username = (fields[usernameIndex] ?? '').trim();
-    if (!service || !username) {
-      continue;
-    }
-
-    const url = urlIndex !== -1 ? (fields[urlIndex] ?? '').trim() : '';
-    const statusRaw = statusIndex !== -1 ? (fields[statusIndex] ?? '').trim() : '';
-
-    rows.push({
-      service,
-      username,
-      url: url ? url : undefined,
-      status: statusRaw ? normalizeAccountStatus(statusRaw) : 'unknown'
-    });
-  }
-
-  return { rows, errors };
-}
-
 export function App(): React.JSX.Element {
   const busyRef = useRef(false);
 
@@ -219,6 +123,22 @@ export function App(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [auditError, setAuditError] = useState<string | null>(null);
   const [auditCount, setAuditCount] = useState<number>(0);
+  const [connectorCatalog, setConnectorCatalog] = useState<ConnectorDefinition[]>(builtinConnectorCatalog);
+  const [connectorCatalogMeta, setConnectorCatalogMeta] = useState<{
+    source: 'builtin' | 'cache' | 'remote' | 'import';
+    catalogVersion: string;
+    generatedAt: string | null;
+    verified: boolean | null;
+    updatedAt: string | null;
+    error: string | null;
+  }>({
+    source: 'builtin',
+    catalogVersion: builtinConnectorCatalogVersion,
+    generatedAt: null,
+    verified: null,
+    updatedAt: null,
+    error: null
+  });
 
   // Identifier form state
   const [idType, setIdType] = useState<IdentifierType>('email');
@@ -269,6 +189,23 @@ export function App(): React.JSX.Element {
 
     return sortFindingsByPriority(vault.findings);
   }, [vault]);
+
+  useEffect(() => {
+    const cached = loadCachedConnectorFeed();
+    if (!cached) {
+      return;
+    }
+
+    setConnectorCatalog(mergeConnectorCatalogs(builtinConnectorCatalog, cached.feed.connectors));
+    setConnectorCatalogMeta({
+      source: 'cache',
+      catalogVersion: cached.feed.catalogVersion,
+      generatedAt: cached.feed.generatedAt,
+      verified: cached.verified,
+      updatedAt: cached.cachedAt,
+      error: null
+    });
+  }, []);
 
   async function withBusy<T>(fn: () => Promise<T>): Promise<T | null> {
     if (busyRef.current) {
@@ -389,6 +326,88 @@ export function App(): React.JSX.Element {
       const next: VaultStateV1 = { ...vault, activePersonaId: personaId };
       setVault(next);
       await persist(next);
+    });
+  }
+
+  function connectorFeedKey(): string | null {
+    const trimmed = connectorFeedPublicKeyBase64.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  async function handleUpdateConnectorCatalog(): Promise<void> {
+    await withBusy(async () => {
+      setConnectorCatalogMeta((meta) => ({ ...meta, error: null }));
+
+      try {
+        const fetched = await fetchConnectorFeed({
+          feedUrl: connectorFeedUrl,
+          publicKeyBase64: connectorFeedKey()
+        });
+
+        saveCachedConnectorFeed(fetched);
+        setConnectorCatalog(mergeConnectorCatalogs(builtinConnectorCatalog, fetched.feed.connectors));
+        setConnectorCatalogMeta({
+          source: 'remote',
+          catalogVersion: fetched.feed.catalogVersion,
+          generatedAt: fetched.feed.generatedAt,
+          verified: fetched.verified,
+          updatedAt: fetched.cachedAt,
+          error: null
+        });
+        await audit('connector_catalog_updated', `connectors:${fetched.feed.catalogVersion}:${fetched.feed.connectors.length}`);
+      } catch (caught) {
+        const message =
+          caught instanceof Error ? caught.message : 'Unable to update connector catalog.';
+        setConnectorCatalogMeta((meta) => ({ ...meta, error: message }));
+      }
+    });
+  }
+
+  async function handleImportConnectorCatalog(file: File): Promise<void> {
+    await withBusy(async () => {
+      setConnectorCatalogMeta((meta) => ({ ...meta, error: null }));
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(await file.text());
+      } catch {
+        setConnectorCatalogMeta((meta) => ({ ...meta, error: 'Connector pack is not valid JSON.' }));
+        return;
+      }
+
+      const feed = parseConnectorCatalogFeedV1(parsed);
+      const connectors = feed?.connectors ?? parseConnectorDefinitions(parsed);
+      if (!connectors) {
+        setConnectorCatalogMeta((meta) => ({ ...meta, error: 'Connector pack failed validation.' }));
+        return;
+      }
+
+      const normalizedFeed = feed ?? {
+        version: 1 as const,
+        catalogVersion: `import-${new Date().toISOString().slice(0, 10)}`,
+        generatedAt: new Date().toISOString(),
+        connectors
+      };
+
+      const cached = {
+        cachedAt: new Date().toISOString(),
+        feed: normalizedFeed,
+        signature: null,
+        verified: null,
+        sourceUrl: 'import'
+      };
+
+      saveCachedConnectorFeed(cached);
+      setConnectorCatalog(mergeConnectorCatalogs(builtinConnectorCatalog, normalizedFeed.connectors));
+      setConnectorCatalogMeta({
+        source: 'import',
+        catalogVersion: normalizedFeed.catalogVersion,
+        generatedAt: normalizedFeed.generatedAt,
+        verified: null,
+        updatedAt: cached.cachedAt,
+        error: null
+      });
+      await audit('connector_catalog_updated', `connectors:${normalizedFeed.catalogVersion}:${normalizedFeed.connectors.length}`);
     });
   }
 
@@ -540,7 +559,8 @@ export function App(): React.JSX.Element {
           service: row.service,
           username: row.username,
           url: row.url,
-          status: row.status ?? 'unknown',
+          lastSeenAt: row.lastSeenAt,
+          status: row.status,
           createdAt: nowIso()
         });
       });
@@ -553,8 +573,76 @@ export function App(): React.JSX.Element {
       const next: VaultStateV1 = { ...vault, accounts: [...vault.accounts, ...imported] };
       setVault(next);
       await persist(next);
-      setAccountsImportStatus(`Imported ${imported.length} accounts${skipped ? `, skipped ${skipped} duplicates` : ''}.`);
-      await audit('account_imported', `accounts:${imported.length}`);
+      const warning = parsed.errors.length > 0 ? ` (${parsed.errors[0]})` : '';
+      setAccountsImportStatus(
+        `Imported ${imported.length} accounts${skipped ? `, skipped ${skipped} duplicates` : ''} (format: ${parsed.format})${warning}.`
+      );
+      await audit('account_imported', `accounts:${imported.length}:format:${parsed.format}`);
+    });
+  }
+
+  async function handleImportMailbox(file: File): Promise<void> {
+    if (!vault || !persona) {
+      return;
+    }
+
+    await withBusy(async () => {
+      setError(null);
+      setAccountsImportStatus(null);
+
+      const maxSizeBytes = 15 * 1024 * 1024;
+      if (file.size > maxSizeBytes) {
+        setError('Mailbox file is too large for in-browser parsing. Use the local agent for large mbox files.');
+        return;
+      }
+
+      const text = await file.text();
+      const discovered = discoverAccountsFromMbox(text, { maxMessages: 2000 });
+      if (discovered.rows.length === 0) {
+        setError(discovered.errors[0] ?? 'No accounts discovered in mailbox.');
+        return;
+      }
+
+      const existingKeys = new Set(
+        vault.accounts
+          .filter((account) => account.personaId === persona.id)
+          .map((account) => `${account.service.toLowerCase()}:${account.username.toLowerCase()}`)
+      );
+
+      const imported: Account[] = [];
+      let skipped = 0;
+      discovered.rows.forEach((row) => {
+        const key = `${row.service.toLowerCase()}:${row.username.toLowerCase()}`;
+        if (existingKeys.has(key)) {
+          skipped += 1;
+          return;
+        }
+        existingKeys.add(key);
+        imported.push({
+          id: crypto.randomUUID(),
+          personaId: persona.id,
+          service: row.service,
+          username: row.username,
+          status: row.status,
+          lastSeenAt: row.lastSeenAt,
+          createdAt: nowIso()
+        });
+      });
+
+      if (imported.length === 0) {
+        setAccountsImportStatus(skipped > 0 ? 'No new accounts to import (all duplicates).' : 'No valid account rows discovered.');
+        return;
+      }
+
+      const next: VaultStateV1 = { ...vault, accounts: [...vault.accounts, ...imported] };
+      setVault(next);
+      await persist(next);
+
+      const warning = discovered.errors.length > 0 ? ` (${discovered.errors[0]})` : '';
+      setAccountsImportStatus(
+        `Imported ${imported.length} accounts from mailbox${skipped ? `, skipped ${skipped} duplicates` : ''}${warning}.`
+      );
+      await audit('account_imported', `accounts:${imported.length}:source:mbox`);
     });
   }
 
@@ -581,6 +669,99 @@ export function App(): React.JSX.Element {
     });
   }
 
+  async function handleExportAgentJob(instanceId: string): Promise<void> {
+    if (!vault) {
+      return;
+    }
+
+    await withBusy(async () => {
+      setError(null);
+
+      const instance = vault.connectorInstances.find((item) => item.id === instanceId);
+      if (!instance) {
+        return;
+      }
+
+      const def = getConnectorDefinition(instance.connectorId, connectorCatalog);
+      if (!def) {
+        setError('Connector definition not found.');
+        return;
+      }
+
+      const agentSteps = def.steps.filter((step) => step.type === 'agent');
+      if (agentSteps.length === 0) {
+        setError('This connector has no agent steps.');
+        return;
+      }
+
+      const job = createAgentJobV1({
+        connectorId: instance.connectorId,
+        connectorInstanceId: instance.id,
+        steps: agentSteps
+      });
+      downloadJsonFile(`unlinkd-agent-job-${instance.connectorId}-${instance.id}.json`, job);
+      await audit('agent_job_exported', `agent:${instance.connectorId}:${instance.id}`);
+    });
+  }
+
+  async function handleImportAgentResults(file: File): Promise<void> {
+    if (!vault || !passphrase) {
+      return;
+    }
+
+    await withBusy(async () => {
+      setError(null);
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(await file.text());
+      } catch {
+        setError('Agent results file is not valid JSON.');
+        return;
+      }
+
+      const results = parseAgentResultsV1(parsed);
+      if (!results) {
+        setError('Agent results file failed validation.');
+        return;
+      }
+
+      const instance = vault.connectorInstances.find((item) => item.id === results.connectorInstanceId);
+      if (!instance) {
+        setError('Connector instance referenced by agent results was not found in this vault.');
+        return;
+      }
+
+      if (instance.connectorId !== results.connectorId) {
+        setError('Agent results connector does not match the referenced connector instance.');
+        return;
+      }
+
+      for (const item of results.evidence) {
+        await putEvidencePayload(item.meta.id, item.payload);
+      }
+
+      const existingEvidence = new Map<string, EvidenceMeta>();
+      instance.evidence.forEach((meta) => existingEvidence.set(meta.id, meta));
+      results.evidence.forEach((item) => existingEvidence.set(item.meta.id, item.meta));
+
+      const updated: ConnectorInstance = {
+        ...instance,
+        evidence: [...existingEvidence.values()],
+        updatedAt: nowIso()
+      };
+
+      const next: VaultStateV1 = {
+        ...vault,
+        connectorInstances: vault.connectorInstances.map((item) => (item.id === instance.id ? updated : item))
+      };
+
+      setVault(next);
+      await persist(next);
+      await audit('agent_results_imported', `agent:${results.connectorId}:${results.evidence.length}`);
+    });
+  }
+
   async function handleTransition(instanceId: string, to: ConnectorState): Promise<void> {
     if (!vault) {
       return;
@@ -597,7 +778,7 @@ export function App(): React.JSX.Element {
         return;
       }
 
-      const def = getConnectorDefinition(instance.connectorId);
+      const def = getConnectorDefinition(instance.connectorId, connectorCatalog);
       const nextCheckAt =
         to === 'recheck_scheduled' && def ? addDaysIso(def.defaultRecheckDays) : instance.nextCheckAt;
 
@@ -626,7 +807,7 @@ export function App(): React.JSX.Element {
         return;
       }
 
-      const def = getConnectorDefinition(instance.connectorId);
+      const def = getConnectorDefinition(instance.connectorId, connectorCatalog);
       const nextCheckAt = addDaysIso(def?.defaultRecheckDays ?? 30);
 
       const updated: ConnectorInstance = {
@@ -973,7 +1154,7 @@ export function App(): React.JSX.Element {
 	              <ul>
 	                {due.map((instance) => (
 	                  <li key={instance.id}>
-	                    <span>{`${connectorName(instance.connectorId)} (due: ${instance.nextCheckAt ?? 'unknown'})`}</span>{' '}
+	                    <span>{`${connectorName(instance.connectorId, connectorCatalog)} (due: ${instance.nextCheckAt ?? 'unknown'})`}</span>{' '}
 	                    <button type="button" onClick={() => void handleMarkRechecked(instance.id)}>
 	                      Mark Rechecked
 	                    </button>
@@ -1093,7 +1274,7 @@ export function App(): React.JSX.Element {
           </button>
 
           <h3>Import Accounts CSV</h3>
-          <p>Expected columns: `service`, `username` (optional: `url`, `status`).</p>
+          <p>Auto-detects common exports (Bitwarden, 1Password, LastPass, Chrome) or generic `service`/`username` CSV.</p>
           <label>
             CSV file
             <input
@@ -1109,6 +1290,22 @@ export function App(): React.JSX.Element {
           </label>
           {accountsImportStatus ? <p role="status">{accountsImportStatus}</p> : null}
 
+          <h3>Mailbox Discovery (.mbox)</h3>
+          <p>Extracts candidate accounts from `From` + `Delivered-To`/`To` headers (best for small exports).</p>
+          <label>
+            Mbox file
+            <input
+              type="file"
+              accept=".mbox,text/plain"
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                if (file) {
+                  void handleImportMailbox(file);
+                }
+              }}
+            />
+          </label>
+
           <h3>Account List</h3>
           <ul>
             {personaAccounts.map((account) => (
@@ -1116,6 +1313,7 @@ export function App(): React.JSX.Element {
                 <strong>{account.service}</strong>
                 <span>{` @ ${account.username}`}</span>
                 <span>{` (${account.status})`}</span>
+                {account.lastSeenAt ? <span>{` last seen ${account.lastSeenAt}`}</span> : null}
                 {account.url ? (
                   <a href={account.url} target="_blank" rel="noreferrer">
                     Open
@@ -1132,6 +1330,45 @@ export function App(): React.JSX.Element {
         <section>
           <h2>Connectors</h2>
           <h3>Catalog</h3>
+          <p>{`Catalog version: ${connectorCatalogMeta.catalogVersion} (${connectorCatalogMeta.source})`}</p>
+          {connectorCatalogMeta.generatedAt ? <p>{`Generated: ${connectorCatalogMeta.generatedAt}`}</p> : null}
+          {connectorCatalogMeta.updatedAt ? <p>{`Updated: ${connectorCatalogMeta.updatedAt}`}</p> : null}
+          <p>{`Signature verified: ${
+            connectorCatalogMeta.verified === null ? 'unknown' : connectorCatalogMeta.verified ? 'yes' : 'no'
+          }`}</p>
+          <button type="button" onClick={() => void handleUpdateConnectorCatalog()}>
+            Update Catalog
+          </button>
+          <label>
+            Import Connector Pack (JSON)
+            <input
+              type="file"
+              accept="application/json"
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                if (file) {
+                  void handleImportConnectorCatalog(file);
+                }
+              }}
+            />
+          </label>
+          {connectorCatalogMeta.error ? <p role="alert">{connectorCatalogMeta.error}</p> : null}
+
+          <h3>Agent</h3>
+          <label>
+            Import Agent Results (JSON)
+            <input
+              type="file"
+              accept="application/json"
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                if (file) {
+                  void handleImportAgentResults(file);
+                }
+              }}
+            />
+          </label>
+
           <ul>
             {connectorCatalog.map((def) => (
               <li key={def.id}>
@@ -1147,13 +1384,18 @@ export function App(): React.JSX.Element {
           <h3>My Connectors</h3>
           <ul>
             {connectorInstances.map((instance) => {
-              const def = getConnectorDefinition(instance.connectorId);
+              const def = getConnectorDefinition(instance.connectorId, connectorCatalog);
               const allowed = nextStates(instance.state);
               return (
                 <li key={instance.id}>
-                  <strong>{connectorName(instance.connectorId)}</strong>
+                  <strong>{connectorName(instance.connectorId, connectorCatalog)}</strong>
                   <p>{`State: ${instance.state}`}</p>
                   {instance.nextCheckAt ? <p>{`Next check: ${instance.nextCheckAt}`}</p> : null}
+                  {def && def.steps.some((step) => step.type === 'agent') ? (
+                    <button type="button" onClick={() => void handleExportAgentJob(instance.id)}>
+                      Export Agent Job
+                    </button>
+                  ) : null}
                   {allowed.length > 0 ? (
                     <div>
                       {allowed.map((state) => (

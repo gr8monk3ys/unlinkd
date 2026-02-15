@@ -1,0 +1,484 @@
+[
+  {
+    "id": "broker-whitepages",
+    "name": "Whitepages (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing public listing entries.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "search",
+        "type": "manual",
+        "title": "Search for your listing",
+        "instructions": "Search Whitepages for your name/phone/address. Capture the listing URL(s) and any record IDs.",
+        "evidenceHint": "Screenshot or URL note"
+      },
+      {
+        "id": "submit",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Submit the opt-out form using the least-privilege proof required. Prefer a dedicated inbox/number for verification if possible.",
+        "evidenceHint": "Confirmation email/screenshot"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify removal",
+        "instructions": "Re-check the listing URL(s). If still present, record the current status and escalate using the provider's support channel.",
+        "evidenceHint": "Before/after screenshots"
+      }
+    ]
+  },
+  {
+    "id": "broker-spokeo",
+    "name": "Spokeo (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing broker profile pages.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "find",
+        "type": "manual",
+        "title": "Find your profile",
+        "instructions": "Search for your profile and record the profile URL.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "submit",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Use the broker's opt-out mechanism to request removal. Provide only the minimum required verification.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck after processing window",
+        "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-beenverified",
+    "name": "BeenVerified (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removal from BeenVerified people-search listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and capture the listing URL and any result identifiers.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Opt out",
+        "instructions": "Submit an opt-out request via the provider's opt-out flow.",
+        "evidenceHint": "Confirmation screen/email"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify removal",
+        "instructions": "Re-check the listing after the processing window and document the outcome.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-intelius",
+    "name": "Intelius (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for Intelius listings and related brands.",
+    "defaultRecheckDays": 60,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "identify",
+        "type": "manual",
+        "title": "Identify listing",
+        "instructions": "Find your listing and record the listing URL and any identifiers the opt-out flow requests.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "submit",
+        "type": "manual",
+        "title": "Submit opt-out",
+        "instructions": "Complete the opt-out request using the least-privilege verification.",
+        "evidenceHint": "Confirmation email/screenshot"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck",
+        "instructions": "Re-check after the published timeline and document the result.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-peoplefinders",
+    "name": "PeopleFinders (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for PeopleFinders listings.",
+    "defaultRecheckDays": 60,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "find",
+        "type": "manual",
+        "title": "Find listing",
+        "instructions": "Search the provider and capture the listing URL(s).",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "request",
+        "type": "manual",
+        "title": "Request removal",
+        "instructions": "Submit the opt-out request through the official removal process.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify",
+        "instructions": "Re-check the listing URLs and document whether removal succeeded.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-truthfinder",
+    "name": "TruthFinder (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for TruthFinder listings.",
+    "defaultRecheckDays": 60,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "collect",
+        "type": "manual",
+        "title": "Collect listing details",
+        "instructions": "Locate your listing and capture the listing URL and any profile/result IDs.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "submit",
+        "type": "manual",
+        "title": "Submit opt-out",
+        "instructions": "Submit a removal request through the official opt-out flow.",
+        "evidenceHint": "Confirmation"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify removal",
+        "instructions": "Re-check the listing after the processing window.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-mylife",
+    "name": "MyLife (Removal Request)",
+    "category": "broker",
+    "description": "Guided workflow for requesting removal or suppression of profile pages.",
+    "defaultRecheckDays": 60,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate profile",
+        "instructions": "Find your MyLife profile page and record the profile URL.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "request",
+        "type": "manual",
+        "title": "Request suppression/removal",
+        "instructions": "Use the provider's suppression/removal process and retain confirmation artifacts.",
+        "evidenceHint": "Email/confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck",
+        "instructions": "Re-check the profile URL after the processing timeline.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-radaris",
+    "name": "Radaris (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for Radaris listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "find",
+        "type": "manual",
+        "title": "Find listing",
+        "instructions": "Locate your listing and capture the listing URL.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Opt out",
+        "instructions": "Submit removal using the official opt-out flow.",
+        "evidenceHint": "Confirmation"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify",
+        "instructions": "Re-check the listing URL and document the result.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-fastpeoplesearch",
+    "name": "FastPeopleSearch (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for FastPeopleSearch listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and record the listing URL and any internal IDs required by the opt-out form.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "submit",
+        "type": "manual",
+        "title": "Submit opt-out",
+        "instructions": "Submit the official opt-out request and keep the confirmation.",
+        "evidenceHint": "Confirmation"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify",
+        "instructions": "Re-check the listing and document whether removal succeeded.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-nuwber",
+    "name": "Nuwber (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for Nuwber listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "find",
+        "type": "manual",
+        "title": "Find listing",
+        "instructions": "Locate the listing(s) for your name/address/phone and record URLs.",
+        "evidenceHint": "URL list + screenshots"
+      },
+      {
+        "id": "request",
+        "type": "manual",
+        "title": "Submit removal request",
+        "instructions": "Submit the opt-out/removal request through the provider's flow.",
+        "evidenceHint": "Confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck",
+        "instructions": "Re-check after the processing window.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-peekyou",
+    "name": "PeekYou (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for PeekYou people-search profiles.",
+    "defaultRecheckDays": 60,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "identify",
+        "type": "manual",
+        "title": "Identify profile",
+        "instructions": "Find your PeekYou profile and record the profile URL.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "request",
+        "type": "manual",
+        "title": "Request removal",
+        "instructions": "Use the official opt-out mechanism to request removal.",
+        "evidenceHint": "Confirmation"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify removal",
+        "instructions": "Re-check the profile URL after the stated processing window.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "search-google",
+    "name": "Google Search (Self-Search + Tracking)",
+    "category": "search",
+    "description": "Track top exposed queries and URLs for your identifiers.",
+    "defaultRecheckDays": 30,
+    "steps": [
+      {
+        "id": "queries",
+        "type": "manual",
+        "title": "Run self-search queries",
+        "instructions": "Search for your name variants, usernames, emails, phone number, and address. Record URLs that expose or link your identifiers.",
+        "evidenceHint": "URL list + screenshots"
+      },
+      {
+        "id": "prioritize",
+        "type": "manual",
+        "title": "Prioritize removals",
+        "instructions": "Prioritize URLs by harm and exploitability. Focus on high-risk pages (addresses, phone, doxxing, recovery vectors).",
+        "evidenceHint": "Notes"
+      }
+    ]
+  },
+  {
+    "id": "account-facebook",
+    "name": "Facebook (Account Minimization)",
+    "category": "account",
+    "description": "Checklist for hardening or deleting a Facebook account.",
+    "defaultRecheckDays": 90,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable phishing-resistant MFA if available",
+        "instructions": "Prefer passkeys or hardware keys. If not available, enable TOTP and remove SMS recovery where possible.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "minimize",
+        "type": "manual",
+        "title": "Minimize profile data",
+        "instructions": "Remove public fields (phone, address, employer, education). Tighten privacy settings and review connected apps.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Delete or deactivate (if desired)",
+        "instructions": "Use first-party deletion/deactivation workflows. Capture proof and schedule a recheck.",
+        "evidenceHint": "Deletion confirmation"
+      }
+    ]
+  },
+  {
+    "id": "account-linkedin",
+    "name": "LinkedIn (Profile Minimization)",
+    "category": "account",
+    "description": "Checklist for reducing discoverability and limiting profile exposure on LinkedIn.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "visibility",
+        "type": "manual",
+        "title": "Reduce public visibility",
+        "instructions": "Review public profile settings, search engine visibility, and contact info visibility. Restrict who can see email/phone and connections.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "data",
+        "type": "manual",
+        "title": "Minimize profile data",
+        "instructions": "Remove non-essential employment history, location details, and public contact fields that increase linkability.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Harden authentication",
+        "instructions": "Enable strong MFA. Prefer passkeys/hardware keys if supported; otherwise enable TOTP and remove SMS where possible.",
+        "evidenceHint": "Settings screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-x",
+    "name": "X / Twitter (Privacy Hardening)",
+    "category": "account",
+    "description": "Checklist for minimizing discoverability and reducing data sharing on X/Twitter.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "privacy",
+        "type": "manual",
+        "title": "Tighten privacy settings",
+        "instructions": "Review discoverability (email/phone), personalization/ads settings, and data sharing options. Disable what you don't need.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "profile",
+        "type": "manual",
+        "title": "Minimize profile fields",
+        "instructions": "Remove phone, location, and external links that create join keys. Consider setting a neutral profile image and bio if needed.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable MFA",
+        "instructions": "Enable the strongest available MFA for your account and verify recovery options are not cross-persona join keys.",
+        "evidenceHint": "Settings screenshot"
+      }
+    ]
+  },
+  {
+    "id": "agent-url-screenshot",
+    "name": "Agent: Capture URL Screenshot",
+    "category": "other",
+    "description": "Automated browser run to capture a screenshot of a target URL for evidence.",
+    "defaultRecheckDays": 30,
+    "steps": [
+      {
+        "id": "navigate",
+        "type": "agent",
+        "title": "Navigate to target URL",
+        "action": {
+          "kind": "navigate",
+          "url": "{{targetUrl}}"
+        },
+        "evidenceHint": "Screenshot"
+      },
+      {
+        "id": "screenshot",
+        "type": "agent",
+        "title": "Capture screenshot",
+        "action": {
+          "kind": "screenshot"
+        },
+        "evidenceHint": "Screenshot"
+      }
+    ]
+  }
+]

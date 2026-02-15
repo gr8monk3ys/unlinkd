@@ -32,14 +32,45 @@ async function withStore<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore
     const store = tx.objectStore(STORE_EVIDENCE);
     const request = fn(store);
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error('IndexedDB request failed.'));
+    let settled = false;
+    let closed = false;
+    let result: T | undefined;
 
-    tx.oncomplete = () => db.close();
-    tx.onerror = () => {
-      reject(tx.error ?? new Error('IndexedDB transaction failed.'));
+    function cleanup(): void {
+      if (closed) {
+        return;
+      }
+      closed = true;
       db.close();
+    }
+
+    function fail(error: unknown): void {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      reject(error instanceof Error ? error : new Error(String(error)));
+    }
+
+    request.onsuccess = () => {
+      result = request.result;
     };
+
+    request.onerror = () => fail(request.error ?? new Error('IndexedDB request failed.'));
+
+    tx.oncomplete = () => {
+      if (settled) {
+        cleanup();
+        return;
+      }
+      settled = true;
+      cleanup();
+      resolve(result as T);
+    };
+
+    tx.onerror = () => fail(tx.error ?? request.error ?? new Error('IndexedDB transaction failed.'));
+    tx.onabort = () => fail(tx.error ?? request.error ?? new Error('IndexedDB transaction aborted.'));
   });
 }
 
@@ -80,4 +111,3 @@ export async function listEvidencePayloads(): Promise<Array<{ id: string; payloa
 export async function clearEvidenceStore(): Promise<void> {
   await withStore('readwrite', (store) => store.clear());
 }
-
