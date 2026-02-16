@@ -1,0 +1,1571 @@
+[
+  {
+    "id": "broker-whitepages",
+    "name": "Whitepages (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing public listing entries.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "search",
+        "type": "manual",
+        "title": "Search for your listing",
+        "instructions": "Search Whitepages for your name/phone/address. Capture the listing URL(s) and any record IDs.",
+        "evidenceHint": "Screenshot or URL note"
+      },
+      {
+        "id": "submit",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Submit the opt-out form using the least-privilege proof required. Prefer a dedicated inbox/number for verification if possible.",
+        "evidenceHint": "Confirmation email/screenshot"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify removal",
+        "instructions": "Re-check the listing URL(s). If still present, record the current status and escalate using the provider's support channel.",
+        "evidenceHint": "Before/after screenshots"
+      }
+    ]
+  },
+  {
+    "id": "broker-spokeo",
+    "name": "Spokeo (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing broker profile pages.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "find",
+        "type": "manual",
+        "title": "Find your profile",
+        "instructions": "Search for your profile and record the profile URL.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "submit",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Use the broker's opt-out mechanism to request removal. Provide only the minimum required verification.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck after processing window",
+        "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-beenverified",
+    "name": "BeenVerified (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removal from BeenVerified people-search listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and capture the listing URL and any result identifiers.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Opt out",
+        "instructions": "Submit an opt-out request via the provider's opt-out flow.",
+        "evidenceHint": "Confirmation screen/email"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify removal",
+        "instructions": "Re-check the listing after the processing window and document the outcome.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-intelius",
+    "name": "Intelius (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for Intelius listings and related brands.",
+    "defaultRecheckDays": 60,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "identify",
+        "type": "manual",
+        "title": "Identify listing",
+        "instructions": "Find your listing and record the listing URL and any identifiers the opt-out flow requests.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "submit",
+        "type": "manual",
+        "title": "Submit opt-out",
+        "instructions": "Complete the opt-out request using the least-privilege verification.",
+        "evidenceHint": "Confirmation email/screenshot"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck",
+        "instructions": "Re-check after the published timeline and document the result.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-peoplefinders",
+    "name": "PeopleFinders (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for PeopleFinders listings.",
+    "defaultRecheckDays": 60,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "find",
+        "type": "manual",
+        "title": "Find listing",
+        "instructions": "Search the provider and capture the listing URL(s).",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "request",
+        "type": "manual",
+        "title": "Request removal",
+        "instructions": "Submit the opt-out request through the official removal process.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify",
+        "instructions": "Re-check the listing URLs and document whether removal succeeded.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-truthfinder",
+    "name": "TruthFinder (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for TruthFinder listings.",
+    "defaultRecheckDays": 60,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "collect",
+        "type": "manual",
+        "title": "Collect listing details",
+        "instructions": "Locate your listing and capture the listing URL and any profile/result IDs.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "submit",
+        "type": "manual",
+        "title": "Submit opt-out",
+        "instructions": "Submit a removal request through the official opt-out flow.",
+        "evidenceHint": "Confirmation"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify removal",
+        "instructions": "Re-check the listing after the processing window.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-mylife",
+    "name": "MyLife (Removal Request)",
+    "category": "broker",
+    "description": "Guided workflow for requesting removal or suppression of profile pages.",
+    "defaultRecheckDays": 60,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate profile",
+        "instructions": "Find your MyLife profile page and record the profile URL.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "request",
+        "type": "manual",
+        "title": "Request suppression/removal",
+        "instructions": "Use the provider's suppression/removal process and retain confirmation artifacts.",
+        "evidenceHint": "Email/confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck",
+        "instructions": "Re-check the profile URL after the processing timeline.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-radaris",
+    "name": "Radaris (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for Radaris listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "find",
+        "type": "manual",
+        "title": "Find listing",
+        "instructions": "Locate your listing and capture the listing URL.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Opt out",
+        "instructions": "Submit removal using the official opt-out flow.",
+        "evidenceHint": "Confirmation"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify",
+        "instructions": "Re-check the listing URL and document the result.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-fastpeoplesearch",
+    "name": "FastPeopleSearch (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for FastPeopleSearch listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and record the listing URL and any internal IDs required by the opt-out form.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "submit",
+        "type": "manual",
+        "title": "Submit opt-out",
+        "instructions": "Submit the official opt-out request and keep the confirmation.",
+        "evidenceHint": "Confirmation"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify",
+        "instructions": "Re-check the listing and document whether removal succeeded.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-nuwber",
+    "name": "Nuwber (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for Nuwber listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "find",
+        "type": "manual",
+        "title": "Find listing",
+        "instructions": "Locate the listing(s) for your name/address/phone and record URLs.",
+        "evidenceHint": "URL list + screenshots"
+      },
+      {
+        "id": "request",
+        "type": "manual",
+        "title": "Submit removal request",
+        "instructions": "Submit the opt-out/removal request through the provider's flow.",
+        "evidenceHint": "Confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck",
+        "instructions": "Re-check after the processing window.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-peekyou",
+    "name": "PeekYou (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for PeekYou people-search profiles.",
+    "defaultRecheckDays": 60,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "identify",
+        "type": "manual",
+        "title": "Identify profile",
+        "instructions": "Find your PeekYou profile and record the profile URL.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "request",
+        "type": "manual",
+        "title": "Request removal",
+        "instructions": "Use the official opt-out mechanism to request removal.",
+        "evidenceHint": "Confirmation"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify removal",
+        "instructions": "Re-check the profile URL after the stated processing window.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "search-google",
+    "name": "Google Search (Self-Search + Tracking)",
+    "category": "search",
+    "description": "Track top exposed queries and URLs for your identifiers.",
+    "defaultRecheckDays": 30,
+    "steps": [
+      {
+        "id": "queries",
+        "type": "manual",
+        "title": "Run self-search queries",
+        "instructions": "Search for your name variants, usernames, emails, phone number, and address. Record URLs that expose or link your identifiers.",
+        "evidenceHint": "URL list + screenshots"
+      },
+      {
+        "id": "prioritize",
+        "type": "manual",
+        "title": "Prioritize removals",
+        "instructions": "Prioritize URLs by harm and exploitability. Focus on high-risk pages (addresses, phone, doxxing, recovery vectors).",
+        "evidenceHint": "Notes"
+      }
+    ]
+  },
+  {
+    "id": "account-facebook",
+    "name": "Facebook (Account Minimization)",
+    "category": "account",
+    "description": "Checklist for hardening or deleting a Facebook account.",
+    "defaultRecheckDays": 90,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable phishing-resistant MFA if available",
+        "instructions": "Prefer passkeys or hardware keys. If not available, enable TOTP and remove SMS recovery where possible.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "minimize",
+        "type": "manual",
+        "title": "Minimize profile data",
+        "instructions": "Remove public fields (phone, address, employer, education). Tighten privacy settings and review connected apps.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Delete or deactivate (if desired)",
+        "instructions": "Use first-party deletion/deactivation workflows. Capture proof and schedule a recheck.",
+        "evidenceHint": "Deletion confirmation"
+      }
+    ]
+  },
+  {
+    "id": "account-linkedin",
+    "name": "LinkedIn (Profile Minimization)",
+    "category": "account",
+    "description": "Checklist for reducing discoverability and limiting profile exposure on LinkedIn.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "visibility",
+        "type": "manual",
+        "title": "Reduce public visibility",
+        "instructions": "Review public profile settings, search engine visibility, and contact info visibility. Restrict who can see email/phone and connections.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "data",
+        "type": "manual",
+        "title": "Minimize profile data",
+        "instructions": "Remove non-essential employment history, location details, and public contact fields that increase linkability.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Harden authentication",
+        "instructions": "Enable strong MFA. Prefer passkeys/hardware keys if supported; otherwise enable TOTP and remove SMS where possible.",
+        "evidenceHint": "Settings screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-x",
+    "name": "X / Twitter (Privacy Hardening)",
+    "category": "account",
+    "description": "Checklist for minimizing discoverability and reducing data sharing on X/Twitter.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "privacy",
+        "type": "manual",
+        "title": "Tighten privacy settings",
+        "instructions": "Review discoverability (email/phone), personalization/ads settings, and data sharing options. Disable what you don't need.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "profile",
+        "type": "manual",
+        "title": "Minimize profile fields",
+        "instructions": "Remove phone, location, and external links that create join keys. Consider setting a neutral profile image and bio if needed.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable MFA",
+        "instructions": "Enable the strongest available MFA for your account and verify recovery options are not cross-persona join keys.",
+        "evidenceHint": "Settings screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-google",
+    "name": "Google Account (Hardening/Deletion)",
+    "category": "account",
+    "description": "Checklist for hardening or deleting a Google account while minimizing recovery and join-key exposure.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable phishing-resistant MFA",
+        "instructions": "Prefer passkeys or hardware security keys. If not available, enable TOTP and remove SMS recovery where possible.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "recovery",
+        "type": "manual",
+        "title": "Review recovery options",
+        "instructions": "Review recovery email/phone and device prompts. Remove anything you don't control or that links personas. Confirm account recovery settings match your threat model.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "export",
+        "type": "manual",
+        "title": "Export data (if deleting)",
+        "instructions": "If you plan to delete, export your data first (email, drive, photos, etc.). Store the export securely.",
+        "evidenceHint": "Export confirmation"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Delete account (if desired)",
+        "instructions": "Use first-party deletion workflows. Capture proof, then re-check key services and recovery channels after the processing window.",
+        "evidenceHint": "Deletion confirmation"
+      }
+    ]
+  },
+  {
+    "id": "account-apple",
+    "name": "Apple ID (Hardening/Deletion)",
+    "category": "account",
+    "description": "Checklist for hardening an Apple ID and reducing linkability across devices and recovery channels.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Ensure 2FA is enabled",
+        "instructions": "Confirm Apple ID two-factor authentication is enabled and that trusted devices are limited to what you control.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "recovery",
+        "type": "manual",
+        "title": "Review trusted numbers and recovery contacts",
+        "instructions": "Review trusted phone numbers and recovery contacts. Remove anything that is stale or cross-persona linkable.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "privacy",
+        "type": "manual",
+        "title": "Minimize shared identifiers",
+        "instructions": "Use Hide My Email where appropriate, review iCloud sharing, and minimize public-facing profile fields.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Deactivate/delete (if desired)",
+        "instructions": "If you plan to leave the ecosystem, use first-party deactivation/deletion options and re-check subscription billing and device sign-in state.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-microsoft",
+    "name": "Microsoft Account (Hardening/Deletion)",
+    "category": "account",
+    "description": "Checklist for hardening a Microsoft account and reducing discoverability and recovery risk.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable strong MFA",
+        "instructions": "Enable the strongest available MFA (passkeys, authenticator app, or hardware keys). Reduce reliance on SMS if possible.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "recovery",
+        "type": "manual",
+        "title": "Review aliases and recovery methods",
+        "instructions": "Review account aliases, recovery email/phone, and sign-in activity. Remove stale recovery methods and revoke unknown sessions.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "apps",
+        "type": "manual",
+        "title": "Revoke app access",
+        "instructions": "Review connected apps and OAuth grants. Remove what you don't need and rotate credentials where appropriate.",
+        "evidenceHint": "Access list screenshot"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Close account (if desired)",
+        "instructions": "Use first-party account closure. Capture proof and re-check billing and recovery channels after the processing window.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-instagram",
+    "name": "Instagram (Privacy Hardening)",
+    "category": "account",
+    "description": "Checklist for minimizing discoverability and reducing data sharing on Instagram.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable MFA",
+        "instructions": "Prefer passkeys/hardware keys if supported, otherwise enable TOTP. Reduce SMS recovery where possible.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "discoverability",
+        "type": "manual",
+        "title": "Reduce discoverability",
+        "instructions": "Review contact sync, phone/email discoverability, and linked accounts. Disable what you don't need.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "profile",
+        "type": "manual",
+        "title": "Minimize profile fields",
+        "instructions": "Remove links, location hints, and identifiers that create join keys. Review tagged photos and mentions.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Deactivate/delete (if desired)",
+        "instructions": "Use first-party deactivation/deletion workflows. Capture proof and schedule a recheck.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-tiktok",
+    "name": "TikTok (Privacy Hardening)",
+    "category": "account",
+    "description": "Checklist for minimizing discoverability and reducing data sharing on TikTok.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable MFA",
+        "instructions": "Enable the strongest available MFA. Reduce reliance on SMS if possible and review recovery settings.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "privacy",
+        "type": "manual",
+        "title": "Tighten privacy settings",
+        "instructions": "Review discoverability, ad personalization, and data sharing settings. Disable what you don't need.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "profile",
+        "type": "manual",
+        "title": "Minimize profile fields",
+        "instructions": "Remove links and identifiers that create join keys. Review past posts for sensitive metadata.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Deactivate/delete (if desired)",
+        "instructions": "Use first-party deactivation/deletion workflows. Capture proof and schedule a recheck.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-snapchat",
+    "name": "Snapchat (Privacy Hardening)",
+    "category": "account",
+    "description": "Checklist for minimizing discoverability and reducing data sharing on Snapchat.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable MFA",
+        "instructions": "Enable MFA and review recovery methods. Prefer app-based authentication over SMS when possible.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "location",
+        "type": "manual",
+        "title": "Disable location sharing",
+        "instructions": "Disable Snap Map / location sharing unless required. Review location permissions on your device.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "discoverability",
+        "type": "manual",
+        "title": "Reduce discoverability",
+        "instructions": "Review contact sync, phone/email discoverability, and public profile settings. Disable what you don't need.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Deactivate/delete (if desired)",
+        "instructions": "Use first-party deactivation/deletion workflows. Capture proof and schedule a recheck.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-discord",
+    "name": "Discord (Privacy Hardening)",
+    "category": "account",
+    "description": "Checklist for reducing account takeover risk and minimizing discoverability on Discord.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable MFA",
+        "instructions": "Enable MFA and store backup codes securely. Review authorized devices/sessions and revoke unknown ones.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "privacy",
+        "type": "manual",
+        "title": "Tighten privacy settings",
+        "instructions": "Review direct message and friend request settings, server privacy defaults, and any data sharing options.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "profile",
+        "type": "manual",
+        "title": "Minimize profile identifiers",
+        "instructions": "Remove links or identifiers that create join keys. Avoid reusing unique usernames across personas.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Delete account (if desired)",
+        "instructions": "Use first-party account deletion. Capture proof and schedule a recheck for billing and linked integrations.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-reddit",
+    "name": "Reddit (Privacy Hardening)",
+    "category": "account",
+    "description": "Checklist for reducing linkability and minimizing profile exposure on Reddit.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable MFA",
+        "instructions": "Enable MFA where available. Review login activity and revoke unknown sessions.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "profile",
+        "type": "manual",
+        "title": "Minimize profile fields",
+        "instructions": "Remove links and personal identifiers. Review posts/comments for self-doxxing and delete sensitive history if needed.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "ads",
+        "type": "manual",
+        "title": "Reduce personalization/ads",
+        "instructions": "Review personalization and tracking settings. Disable what you don't need.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Delete account (if desired)",
+        "instructions": "Use first-party deletion. Capture proof and schedule a recheck for remaining public content.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-github",
+    "name": "GitHub (Privacy Hardening)",
+    "category": "account",
+    "description": "Checklist for reducing account takeover risk and minimizing public identifiers on GitHub.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable strong 2FA",
+        "instructions": "Prefer passkeys or security keys. If not available, enable TOTP. Store recovery codes securely.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "tokens",
+        "type": "manual",
+        "title": "Audit tokens and SSH keys",
+        "instructions": "Review personal access tokens, OAuth apps, SSH keys, and active sessions. Revoke anything unknown or unused.",
+        "evidenceHint": "Access list screenshot"
+      },
+      {
+        "id": "emails",
+        "type": "manual",
+        "title": "Minimize public email exposure",
+        "instructions": "Review public email settings and commit email configuration. Avoid publishing unique identifiers that link personas.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Delete account (if desired)",
+        "instructions": "Use first-party deletion workflows. Capture proof and recheck organization access and billing.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-amazon",
+    "name": "Amazon (Account Minimization)",
+    "category": "account",
+    "description": "Checklist for reducing account takeover risk and minimizing address and payment exposure on Amazon.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable MFA",
+        "instructions": "Enable MFA where available and ensure recovery options are current. Prefer app-based methods over SMS when possible.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "payments",
+        "type": "manual",
+        "title": "Review payment methods and addresses",
+        "instructions": "Remove unused payment methods and shipping addresses. Reduce saved data to the minimum you need.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "privacy",
+        "type": "manual",
+        "title": "Review privacy and ad settings",
+        "instructions": "Review ad personalization and data sharing settings. Disable what you don't need.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Close account (if desired)",
+        "instructions": "Use first-party account closure. Capture proof and schedule a recheck for subscriptions and billing.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-paypal",
+    "name": "PayPal (Account Hardening/Closure)",
+    "category": "account",
+    "description": "Checklist for reducing account takeover and payment fraud risk on PayPal.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable MFA and alerts",
+        "instructions": "Enable MFA and transaction alerts. Prefer app-based authentication over SMS when possible.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "linked",
+        "type": "manual",
+        "title": "Review linked banks/cards",
+        "instructions": "Remove unused linked accounts and cards. Review authorized merchants and recurring payments.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "security",
+        "type": "manual",
+        "title": "Review sign-in activity",
+        "instructions": "Review recent sign-in activity and revoke unknown sessions/devices.",
+        "evidenceHint": "Activity screenshot"
+      },
+      {
+        "id": "close",
+        "type": "manual",
+        "title": "Close account (if desired)",
+        "instructions": "Use first-party closure workflows. Capture proof and schedule a recheck for remaining authorizations.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-dropbox",
+    "name": "Dropbox (Privacy Hardening/Deletion)",
+    "category": "account",
+    "description": "Checklist for hardening Dropbox and reducing data exposure.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable MFA",
+        "instructions": "Enable strong MFA and store recovery codes securely. Revoke unknown sessions/devices.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "sharing",
+        "type": "manual",
+        "title": "Review shared links and connected apps",
+        "instructions": "Audit shared links and connected apps. Remove what you don't need and expire public links where possible.",
+        "evidenceHint": "Access list screenshot"
+      },
+      {
+        "id": "export",
+        "type": "manual",
+        "title": "Export and purge data (if leaving)",
+        "instructions": "Download any needed files, then remove sensitive data and revoke devices/sessions.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Delete account (if desired)",
+        "instructions": "Use first-party deletion workflows. Capture proof and schedule a recheck.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-uber",
+    "name": "Uber (Privacy Hardening/Deletion)",
+    "category": "account",
+    "description": "Checklist for reducing location and payment exposure on Uber.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Harden sign-in and recovery",
+        "instructions": "Review sign-in methods and recovery channels. Reduce reliance on phone number recovery if possible and keep recovery options current.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "data",
+        "type": "manual",
+        "title": "Review location and trip history",
+        "instructions": "Review trip history and saved places. Remove saved addresses and payment methods you no longer need.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "privacy",
+        "type": "manual",
+        "title": "Review privacy settings",
+        "instructions": "Review ad personalization and data sharing options. Disable what you don't need.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Delete account (if desired)",
+        "instructions": "Use first-party deletion workflows. Capture proof and schedule a recheck.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-airbnb",
+    "name": "Airbnb (Privacy Hardening/Deletion)",
+    "category": "account",
+    "description": "Checklist for reducing travel and identity exposure on Airbnb.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "mfa",
+        "type": "manual",
+        "title": "Enable MFA",
+        "instructions": "Enable MFA where available and review recovery options. Revoke unknown sessions/devices.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "profile",
+        "type": "manual",
+        "title": "Minimize profile fields",
+        "instructions": "Remove non-essential profile information and review public profile visibility.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "payments",
+        "type": "manual",
+        "title": "Review payment methods",
+        "instructions": "Remove unused payment methods and review billing history.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Delete account (if desired)",
+        "instructions": "Use first-party deletion workflows. Capture proof and schedule a recheck.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-spotify",
+    "name": "Spotify (Privacy Hardening/Deletion)",
+    "category": "account",
+    "description": "Checklist for reducing profile exposure and linked-account risk on Spotify.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "linked",
+        "type": "manual",
+        "title": "Review connected apps",
+        "instructions": "Review connected apps and logins. Remove integrations you don't need and rotate credentials where appropriate.",
+        "evidenceHint": "Access list screenshot"
+      },
+      {
+        "id": "profile",
+        "type": "manual",
+        "title": "Minimize profile identifiers",
+        "instructions": "Review profile name, social links, and any public-facing identifiers. Avoid reusing unique usernames across personas.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "privacy",
+        "type": "manual",
+        "title": "Review privacy settings",
+        "instructions": "Review data sharing and personalization settings. Disable what you don't need.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Delete account (if desired)",
+        "instructions": "Use first-party account closure. Capture proof and schedule a recheck for billing and subscriptions.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "account-netflix",
+    "name": "Netflix (Privacy Hardening/Deletion)",
+    "category": "account",
+    "description": "Checklist for reducing account takeover risk and minimizing profile exposure on Netflix.",
+    "defaultRecheckDays": 180,
+    "steps": [
+      {
+        "id": "security",
+        "type": "manual",
+        "title": "Review devices and sign out",
+        "instructions": "Review signed-in devices and sign out of unknown sessions. Rotate password if needed.",
+        "evidenceHint": "Settings screenshot"
+      },
+      {
+        "id": "billing",
+        "type": "manual",
+        "title": "Review billing and payment methods",
+        "instructions": "Review billing details and remove payment methods if you are closing the account.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "profile",
+        "type": "manual",
+        "title": "Minimize profile identifiers",
+        "instructions": "Review profile names and icons if shared. Avoid unique names that link personas.",
+        "evidenceHint": "Before/after screenshots"
+      },
+      {
+        "id": "delete",
+        "type": "manual",
+        "title": "Cancel/close (if desired)",
+        "instructions": "Cancel subscription and close the account where applicable. Capture proof and schedule a recheck for recurring charges.",
+        "evidenceHint": "Confirmation screenshot"
+      }
+    ]
+  },
+  {
+    "id": "search-bing",
+    "name": "Bing Search (Self-Search + Tracking)",
+    "category": "search",
+    "description": "Track exposed queries and URLs for your identifiers using Bing.",
+    "defaultRecheckDays": 30,
+    "steps": [
+      {
+        "id": "queries",
+        "type": "manual",
+        "title": "Run self-search queries",
+        "instructions": "Search for your name variants, usernames, emails, phone number, and address. Record URLs that expose or link your identifiers.",
+        "evidenceHint": "URL list + screenshots"
+      },
+      {
+        "id": "monitor",
+        "type": "manual",
+        "title": "Monitor changes over time",
+        "instructions": "Re-run the same query set periodically and track which URLs persist, disappear, or newly appear.",
+        "evidenceHint": "Notes"
+      }
+    ]
+  },
+  {
+    "id": "search-duckduckgo",
+    "name": "DuckDuckGo Search (Self-Search + Tracking)",
+    "category": "search",
+    "description": "Track exposed queries and URLs for your identifiers using DuckDuckGo.",
+    "defaultRecheckDays": 30,
+    "steps": [
+      {
+        "id": "queries",
+        "type": "manual",
+        "title": "Run self-search queries",
+        "instructions": "Search for your name variants, usernames, emails, phone number, and address. Record URLs that expose or link your identifiers.",
+        "evidenceHint": "URL list + screenshots"
+      },
+      {
+        "id": "monitor",
+        "type": "manual",
+        "title": "Monitor changes over time",
+        "instructions": "Re-run the same query set periodically and track which URLs persist, disappear, or newly appear.",
+        "evidenceHint": "Notes"
+      }
+    ]
+  },
+  {
+    "id": "broker-truepeoplesearch",
+    "name": "TruePeopleSearch (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing people-search listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and capture the listing URL and any result identifiers.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Use the provider's opt-out mechanism to request removal. Provide only the minimum required verification.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck after processing window",
+        "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-instantcheckmate",
+    "name": "Instant Checkmate (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing people-search listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and capture the listing URL and any result identifiers.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Use the provider's opt-out mechanism to request removal. Provide only the minimum required verification.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck after processing window",
+        "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-ussearch",
+    "name": "US Search (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing people-search listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and capture the listing URL and any result identifiers.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Use the provider's opt-out mechanism to request removal. Provide only the minimum required verification.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck after processing window",
+        "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-thatsthem",
+    "name": "ThatsThem (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing people-search listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and capture the listing URL and any result identifiers.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Use the provider's opt-out mechanism to request removal. Provide only the minimum required verification.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck after processing window",
+        "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-anywho",
+    "name": "AnyWho (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing directory listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and capture the listing URL and any result identifiers.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Use the provider's opt-out mechanism to request removal. Provide only the minimum required verification.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck after processing window",
+        "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-zabasearch",
+    "name": "ZabaSearch (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing people-search listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and capture the listing URL and any result identifiers.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Use the provider's opt-out mechanism to request removal. Provide only the minimum required verification.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck after processing window",
+        "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-clustrmaps",
+    "name": "ClustrMaps (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing profile and address listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and capture the listing URL and any result identifiers.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Use the provider's opt-out mechanism to request removal. Provide only the minimum required verification.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck after processing window",
+        "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-smartbackgroundchecks",
+    "name": "SmartBackgroundChecks (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing people-search listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and capture the listing URL and any result identifiers.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Use the provider's opt-out mechanism to request removal. Provide only the minimum required verification.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck after processing window",
+        "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "broker-411",
+    "name": "411.com (Opt-out)",
+    "category": "broker",
+    "description": "Guided opt-out workflow for removing directory listings.",
+    "defaultRecheckDays": 45,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "locate",
+        "type": "manual",
+        "title": "Locate listing",
+        "instructions": "Find your listing and capture the listing URL and any result identifiers.",
+        "evidenceHint": "URL note + screenshot"
+      },
+      {
+        "id": "optout",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Use the provider's opt-out mechanism to request removal. Provide only the minimum required verification.",
+        "evidenceHint": "Submission confirmation"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck after processing window",
+        "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
+        "evidenceHint": "After screenshot"
+      }
+    ]
+  },
+  {
+    "id": "other-credit-freeze-us",
+    "name": "US Credit Freeze (Experian/Equifax/TransUnion)",
+    "category": "other",
+    "description": "Checklist for placing and maintaining credit freezes to reduce identity-based account opening risk.",
+    "defaultRecheckDays": 365,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "experian",
+        "type": "manual",
+        "title": "Freeze Experian",
+        "instructions": "Place a security freeze and store any PIN/passcode/recovery details securely.",
+        "evidenceHint": "Confirmation screenshot/PDF"
+      },
+      {
+        "id": "equifax",
+        "type": "manual",
+        "title": "Freeze Equifax",
+        "instructions": "Place a security freeze and store any PIN/passcode/recovery details securely.",
+        "evidenceHint": "Confirmation screenshot/PDF"
+      },
+      {
+        "id": "transunion",
+        "type": "manual",
+        "title": "Freeze TransUnion",
+        "instructions": "Place a security freeze and store any PIN/passcode/recovery details securely.",
+        "evidenceHint": "Confirmation screenshot/PDF"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify and calendar rechecks",
+        "instructions": "Verify freezes are active and calendar periodic rechecks. Keep recovery details in your password manager/vault.",
+        "evidenceHint": "Notes"
+      }
+    ]
+  },
+  {
+    "id": "other-optout-prescreen",
+    "name": "Prescreened Offers Opt-out (US)",
+    "category": "other",
+    "description": "Reduce unsolicited credit/insurance offers by opting out of prescreened lists (where applicable).",
+    "defaultRecheckDays": 365,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "submit",
+        "type": "manual",
+        "title": "Submit opt-out request",
+        "instructions": "Use the official opt-out flow to remove your information from prescreened offer lists. Store any confirmation details securely.",
+        "evidenceHint": "Confirmation screenshot/PDF"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Recheck annually",
+        "instructions": "Recheck your opt-out status periodically and renew if required.",
+        "evidenceHint": "Notes"
+      }
+    ]
+  },
+  {
+    "id": "other-chexsystems-freeze",
+    "name": "ChexSystems Security Freeze (US)",
+    "category": "other",
+    "description": "Checklist for placing a ChexSystems freeze to reduce new bank account opening risk.",
+    "defaultRecheckDays": 365,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "freeze",
+        "type": "manual",
+        "title": "Place a security freeze",
+        "instructions": "Use the official flow to place a security freeze and store any PIN/passcode/recovery details securely.",
+        "evidenceHint": "Confirmation screenshot/PDF"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify and calendar rechecks",
+        "instructions": "Verify the freeze is active and calendar periodic rechecks.",
+        "evidenceHint": "Notes"
+      }
+    ]
+  },
+  {
+    "id": "other-nctue-optout",
+    "name": "NCTUE Opt-out / Freeze (US)",
+    "category": "other",
+    "description": "Checklist for reducing telecom/utility identity-risk via NCTUE reporting controls (where applicable).",
+    "defaultRecheckDays": 365,
+    "jurisdictions": ["US"],
+    "steps": [
+      {
+        "id": "request",
+        "type": "manual",
+        "title": "Request report and apply protections",
+        "instructions": "Request your consumer report and apply any available protections (opt-out/freeze) based on your needs. Store confirmation details securely.",
+        "evidenceHint": "Confirmation screenshot/PDF"
+      },
+      {
+        "id": "verify",
+        "type": "manual",
+        "title": "Verify status",
+        "instructions": "Verify your chosen protections are active and calendar periodic rechecks.",
+        "evidenceHint": "Notes"
+      }
+    ]
+  },
+  {
+    "id": "other-sim-swap-protection",
+    "name": "SIM Swap Protection (Carrier Lock)",
+    "category": "other",
+    "description": "Checklist for reducing SIM swap and number-porting risk.",
+    "defaultRecheckDays": 365,
+    "steps": [
+      {
+        "id": "pin",
+        "type": "manual",
+        "title": "Set a carrier account PIN",
+        "instructions": "Set a strong carrier account PIN/passcode and remove any easily guessable answers. Avoid SMS recovery for critical accounts where possible.",
+        "evidenceHint": "Confirmation screenshot"
+      },
+      {
+        "id": "port",
+        "type": "manual",
+        "title": "Enable port-out protection",
+        "instructions": "Enable port-out protection/number lock (naming varies by carrier). Confirm it is active.",
+        "evidenceHint": "Confirmation screenshot"
+      },
+      {
+        "id": "review",
+        "type": "manual",
+        "title": "Review authorized users and notifications",
+        "instructions": "Review authorized users on the account and enable security notifications for SIM/port changes.",
+        "evidenceHint": "Settings screenshot"
+      }
+    ]
+  },
+  {
+    "id": "other-email-aliasing",
+    "name": "Email Aliasing + Dedicated Inboxes",
+    "category": "other",
+    "description": "Reduce linkability by using unique email aliases per service and routing them to dedicated inboxes.",
+    "defaultRecheckDays": 365,
+    "steps": [
+      {
+        "id": "plan",
+        "type": "manual",
+        "title": "Pick an aliasing approach",
+        "instructions": "Choose a strategy (provider aliases, custom domain, or alias service). Ensure you can rotate aliases if one is leaked.",
+        "evidenceHint": "Notes"
+      },
+      {
+        "id": "migrate",
+        "type": "manual",
+        "title": "Migrate high-risk accounts first",
+        "instructions": "Update email for high-risk accounts (email provider, bank, password manager, phone carrier, cloud accounts). Use unique aliases per service.",
+        "evidenceHint": "Settings screenshots"
+      },
+      {
+        "id": "inventory",
+        "type": "manual",
+        "title": "Record aliases in the vault",
+        "instructions": "Record which alias maps to which service so you can identify leaks and rotate addresses.",
+        "evidenceHint": "Accounts export"
+      }
+    ]
+  },
+  {
+    "id": "agent-url-screenshot",
+    "name": "Agent: Capture URL Screenshot",
+    "category": "other",
+    "description": "Automated browser run to capture a screenshot of a target URL for evidence.",
+    "defaultRecheckDays": 30,
+    "steps": [
+      {
+        "id": "navigate",
+        "type": "agent",
+        "title": "Navigate to target URL",
+        "action": {
+          "kind": "navigate",
+          "url": "{{targetUrl}}"
+        },
+        "evidenceHint": "Screenshot"
+      },
+      {
+        "id": "screenshot",
+        "type": "agent",
+        "title": "Capture screenshot",
+        "action": {
+          "kind": "screenshot"
+        },
+        "evidenceHint": "Screenshot"
+      }
+    ]
+  }
+]

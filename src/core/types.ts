@@ -10,10 +10,33 @@ export type ThreatTier = 'low' | 'moderate' | 'high';
 
 export interface Identifier {
   id: string;
+  personaId?: string;
   type: IdentifierType;
   value: string;
   sensitivity: 1 | 2 | 3;
   consent: boolean;
+  createdAt?: string;
+}
+
+export interface Persona {
+  id: string;
+  name: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export type AccountStatus = 'active' | 'unused' | 'removed' | 'unknown';
+
+export interface Account {
+  id: string;
+  personaId: string;
+  service: string;
+  username: string;
+  url?: string;
+  lastSeenAt?: string;
+  mfaEnabled?: boolean;
+  status: AccountStatus;
+  createdAt: string;
 }
 
 export interface ExposureNode {
@@ -34,6 +57,11 @@ export interface RiskFinding {
   harm: number;
   exploitability: number;
   tier: ThreatTier;
+  personaId?: string;
+  status?: 'open' | 'in_progress' | 'mitigated';
+  source?: 'local' | 'import' | 'agent';
+  createdAt?: string;
+  connectorInstanceId?: string;
 }
 
 export interface ExposureGraph {
@@ -48,3 +76,62 @@ export type ConnectorState =
   | 'executed'
   | 'proof_captured'
   | 'recheck_scheduled';
+
+export type ConnectorCategory = 'broker' | 'account' | 'search' | 'other';
+
+export type ConnectorStep =
+  | {
+      id: string;
+      type: 'manual';
+      title: string;
+      instructions: string;
+      evidenceHint?: string;
+    }
+  | {
+      id: string;
+      type: 'agent';
+      title: string;
+      action: {
+        kind: 'navigate' | 'fill' | 'click' | 'waitForText' | 'screenshot';
+        selector?: string;
+        value?: string;
+        url?: string;
+      };
+      evidenceHint?: string;
+    };
+
+export interface ConnectorDefinition {
+  id: string;
+  name: string;
+  category: ConnectorCategory;
+  description: string;
+  defaultRecheckDays: number;
+  steps: ConnectorStep[];
+  jurisdictions?: string[];
+}
+
+export type EvidenceKind = 'screenshot' | 'pdf' | 'email' | 'note' | 'file';
+
+export interface EvidenceMeta {
+  id: string;
+  connectorInstanceId: string;
+  kind: EvidenceKind;
+  filename: string;
+  mimeType: string;
+  size: number;
+  sha256: string;
+  createdAt: string;
+  label?: string;
+}
+
+export interface ConnectorInstance {
+  id: string;
+  connectorId: string;
+  personaId: string;
+  state: ConnectorState;
+  createdAt: string;
+  updatedAt: string;
+  nextCheckAt?: string;
+  evidence: EvidenceMeta[];
+  notes?: string;
+}

@@ -6,7 +6,7 @@ import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'node_modules']
+    ignores: ['dist', 'node_modules', 'playwright-report', 'test-results']
   },
   {
     extends: [eslint.configs.recommended, ...tseslint.configs.recommended],
@@ -22,6 +22,13 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }]
+    }
+  },
+  {
+    // Node-based configs and end-to-end tests.
+    files: ['playwright.config.ts', 'e2e/**/*.ts'],
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node }
     }
   }
 );

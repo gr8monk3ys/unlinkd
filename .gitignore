@@ -2,3 +2,9 @@ node_modules/
 dist/
 coverage/
 .vite/
+.wrangler/
+.secrets/
+agent/node_modules/
+agent/dist/
+playwright-report/
+test-results/

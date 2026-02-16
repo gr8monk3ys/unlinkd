@@ -4,7 +4,7 @@ import type { Identifier, IdentifierType } from './types';
 const identifierTypeSchema = z.enum(['legal_name', 'email', 'phone', 'username', 'address', 'device']);
 
 const emailSchema = z.email();
-const phoneSchema = z.string().regex(/^\+?[0-9()\-\s]{7,20}$/);
+const phoneSchema = z.string().regex(/^\+?[0-9]{7,20}$/);
 const nonEmptySchema = z.string().trim().min(1);
 
 function validateValue(type: IdentifierType, value: string): string | null {
@@ -26,7 +26,9 @@ export function normalizeIdentifierValue(type: IdentifierType, value: string): s
   }
 
   if (type === 'phone') {
-    return trimmed.replace(/\s+/g, '');
+    const hasPlus = trimmed.startsWith('+');
+    const digits = trimmed.replace(/\D+/g, '');
+    return hasPlus ? `+${digits}` : digits;
   }
 
   return trimmed;
@@ -71,10 +73,12 @@ export function isIdentifierArray(value: unknown): value is Identifier[] {
   const schema = z.array(
     z.object({
       id: z.string(),
+      personaId: z.string().optional(),
       type: identifierTypeSchema,
       value: z.string(),
       sensitivity: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-      consent: z.boolean()
+      consent: z.boolean(),
+      createdAt: z.string().optional()
     })
   );
 

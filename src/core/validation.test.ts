@@ -19,4 +19,8 @@ describe('validation', () => {
   it('normalizes phone whitespace', () => {
     expect(normalizeIdentifierValue('phone', '+1 555 111 2222')).toBe('+15551112222');
   });
+
+  it('normalizes phone punctuation', () => {
+    expect(normalizeIdentifierValue('phone', '+1 (555) 111-2222')).toBe('+15551112222');
+  });
 });
