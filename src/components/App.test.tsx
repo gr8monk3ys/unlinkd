@@ -18,21 +18,26 @@ async function unlockStorage(): Promise<void> {
   expect(await screen.findByText('Persona: Default')).toBeInTheDocument();
 }
 
+async function switchToTab(name: string): Promise<void> {
+  fireEvent.click(screen.getByRole('tab', { name }));
+  // Wait for lazy-loaded tab content to render
+  await screen.findByRole('tabpanel');
+}
+
 describe('App', () => {
   it('adds an identifier and updates graph node count', async () => {
     render(<App />);
     await unlockStorage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Identifiers' }));
+    await switchToTab('Identifiers');
     fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'email' } });
     fireEvent.change(screen.getByLabelText('Value'), { target: { value: 'user@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add Identifier' }));
 
     expect(await screen.findByText('email: user@example.com')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Dashboard' }));
-    expect(await screen.findByText('Identifiers (active persona): 1')).toBeInTheDocument();
-    expect(screen.getByText('Graph nodes: 1')).toBeInTheDocument();
+    await switchToTab('Dashboard');
+    await waitFor(() => expect(screen.getByTestId('stat-identifiers')).toHaveTextContent('1'));
     expect(await screen.findByText('Entries: 1')).toBeInTheDocument();
   });
 
@@ -48,17 +53,18 @@ describe('App', () => {
     render(<App />);
     await unlockStorage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Identifiers' }));
+    await switchToTab('Identifiers');
     fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'username' } });
     fireEvent.change(screen.getByLabelText('Value'), { target: { value: 'alias' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add Identifier' }));
     expect(await screen.findByText('username: alias')).toBeInTheDocument();
 
     // Wait for the async audit write to complete (busy guard blocks re-entrancy).
-    fireEvent.click(screen.getByRole('button', { name: 'Dashboard' }));
+    await switchToTab('Dashboard');
     expect(await screen.findByText('Entries: 1')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Identifiers' }));
+    await switchToTab('Identifiers');
     await waitFor(() => expect((screen.getByLabelText('Value') as HTMLInputElement).value).toBe(''));
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'username' } });
     fireEvent.change(screen.getByLabelText('Value'), { target: { value: 'alias' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add Identifier' }));
 
@@ -81,7 +87,7 @@ describe('App', () => {
     render(<App />);
     await unlockStorage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Identifiers' }));
+    await switchToTab('Identifiers');
     expect(await screen.findByText('username: alias')).toBeInTheDocument();
   });
 });

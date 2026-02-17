@@ -1,0 +1,605 @@
+/* ============================================================
+   unlinkd design system — dark theme
+   ============================================================ */
+
+/* --- Custom properties ------------------------------------ */
+:root {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #1c2128;
+  --bg-overlay: #21262d;
+
+  --border-default: #30363d;
+  --border-muted: #21262d;
+  --border-accent: #388bfd40;
+
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --text-link: #58a6ff;
+
+  --accent-blue: #58a6ff;
+  --accent-teal: #3fb9b2;
+  --accent-green: #3fb950;
+  --accent-red: #f85149;
+  --accent-amber: #d29922;
+  --accent-purple: #bc8cff;
+
+  --btn-primary-bg: #238636;
+  --btn-primary-hover: #2ea043;
+  --btn-secondary-bg: transparent;
+  --btn-secondary-border: #30363d;
+  --btn-destructive-bg: #da3633;
+  --btn-destructive-hover: #f85149;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+    Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  --container-max: 920px;
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+}
+
+/* --- Reset & base ----------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Container -------------------------------------------- */
+main {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-lg) var(--space-md);
+}
+
+/* --- Typography ------------------------------------------- */
+h1, h2, h3, h4 {
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-sm);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+h1 {
+  font-size: 1.75rem;
+  margin-top: 0;
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-default);
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 1.35rem;
+  margin-top: var(--space-lg);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-muted);
+}
+
+h3 {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-lg);
+}
+
+h4 {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-md);
+}
+
+p {
+  margin-top: var(--space-xs);
+  margin-bottom: var(--space-sm);
+  color: var(--text-secondary);
+}
+
+strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code, samp, kbd {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--bg-tertiary);
+  padding: 0.15em 0.4em;
+  border-radius: var(--radius-sm);
+  color: var(--accent-teal);
+}
+
+/* --- Sections (cards) ------------------------------------- */
+main > section,
+[role="tabpanel"] > section,
+section > section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+main > section > h2,
+[role="tabpanel"] > section > h2 {
+  margin-top: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+section > section {
+  background: var(--bg-tertiary);
+  border-color: var(--border-muted);
+}
+
+/* --- Buttons ---------------------------------------------- */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: 0.45rem 0.9rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-primary);
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+  margin: var(--space-xs) var(--space-xs) var(--space-xs) 0;
+  vertical-align: middle;
+}
+
+button:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--text-muted);
+}
+
+button:active {
+  background: var(--bg-secondary);
+}
+
+/* Primary action buttons — use the green accent for main CTA */
+button[type="button"]:first-of-type {
+  /* only first button in its container gets primary treatment when alone */
+}
+
+/* Specific destructive buttons */
+button:is(
+  [onclick*="wipe" i],
+  [onclick*="delete" i]
+) {
+  /* fallback — real targeting below via content heuristic */
+}
+
+/* Tab bar buttons get their own styles (see tab section) */
+
+/* --- Inputs, selects, textareas --------------------------- */
+input:not([type="checkbox"]):not([type="file"]),
+select,
+textarea {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-xs);
+  margin-bottom: var(--space-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input:not([type="checkbox"]):not([type="file"]):focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(56, 139, 253, 0.15);
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238b949e' viewBox='0 0 16 16'%3E%3Cpath d='M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+  cursor: pointer;
+}
+
+select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* --- Checkbox --------------------------------------------- */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-right: var(--space-xs);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+input[type="checkbox"]:checked {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--bg-primary);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+label:has(input[type="checkbox"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  margin-bottom: var(--space-sm);
+}
+
+/* --- File inputs ------------------------------------------ */
+input[type="file"] {
+  display: block;
+  margin-top: var(--space-xs);
+  margin-bottom: var(--space-sm);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+input[type="file"]::file-selector-button {
+  padding: 0.4rem 0.8rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  margin-right: var(--space-sm);
+  transition: background-color 0.15s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: var(--bg-tertiary);
+}
+
+/* --- Labels ----------------------------------------------- */
+label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+/* --- Tab navigation --------------------------------------- */
+nav[role="tablist"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 3px;
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-md);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+[role="tab"] {
+  flex: 1 1 auto;
+  padding: 0.45rem 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  text-align: center;
+  margin: 0;
+  white-space: nowrap;
+}
+
+[role="tab"]:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+[role="tab"][aria-selected="true"] {
+  color: var(--text-primary);
+  background: var(--bg-overlay);
+  border-color: var(--border-default);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* --- Tab panels ------------------------------------------- */
+[role="tabpanel"] {
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Lists (data rows / cards) ---------------------------- */
+ul, ol {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-sm) 0;
+}
+
+ol {
+  list-style: decimal;
+  padding-left: var(--space-lg);
+}
+
+ol > li {
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+ol > li:last-child {
+  border-bottom: none;
+}
+
+ul > li {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-xs);
+  transition: border-color 0.15s ease;
+}
+
+ul > li:hover {
+  border-color: var(--border-default);
+}
+
+ul > li > strong {
+  display: inline;
+  color: var(--text-primary);
+}
+
+ul > li > span {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+ul > li > p {
+  margin: var(--space-xs) 0 0;
+  font-size: 0.8125rem;
+}
+
+/* Nested list (evidence, steps) — slightly less prominent */
+li > ul,
+li > ol,
+section > section ul {
+  margin-top: var(--space-sm);
+}
+
+li > ul > li,
+section > section ul > li {
+  background: var(--bg-secondary);
+  border-color: var(--border-muted);
+  font-size: 0.8125rem;
+}
+
+/* --- Alerts & status -------------------------------------- */
+[role="alert"] {
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--accent-red);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: var(--space-sm) 0;
+}
+
+[role="status"] {
+  background: rgba(56, 139, 253, 0.08);
+  border: 1px solid rgba(56, 139, 253, 0.25);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--accent-blue);
+  font-size: 0.875rem;
+  margin: var(--space-sm) 0;
+}
+
+/* --- Loading / suspense fallback -------------------------- */
+main > div > p:only-child {
+  text-align: center;
+  color: var(--text-muted);
+  padding: var(--space-2xl) 0;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+}
+
+/* Pulsing animation for any "Loading..." text */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* --- Persona badge (the persona indicator line) ----------- */
+main > p:first-of-type {
+  display: inline-block;
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xs) var(--space-md);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--accent-teal);
+  margin-bottom: var(--space-sm);
+}
+
+/* --- Description text below h1 on lock screen ------------- */
+main > p:nth-of-type(1):not(:last-of-type) {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  max-width: 500px;
+}
+
+/* --- Horizontal rule / visual separation ------------------ */
+hr {
+  border: none;
+  border-top: 1px solid var(--border-default);
+  margin: var(--space-lg) 0;
+}
+
+/* --- Scrollbar styling ------------------------------------ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* --- Responsive ------------------------------------------- */
+@media (max-width: 640px) {
+  main {
+    padding: var(--space-md) var(--space-sm);
+  }
+
+  h1 {
+    font-size: 1.35rem;
+  }
+
+  h2 {
+    font-size: 1.15rem;
+  }
+
+  nav[role="tablist"] {
+    gap: 1px;
+    padding: 2px;
+  }
+
+  [role="tab"] {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.75rem;
+    min-width: 0;
+  }
+
+  input:not([type="checkbox"]):not([type="file"]),
+  select,
+  textarea {
+    max-width: 100%;
+  }
+
+  main > section,
+  [role="tabpanel"] > section,
+  section > section {
+    padding: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  nav[role="tablist"] {
+    flex-wrap: wrap;
+  }
+
+  [role="tab"] {
+    flex: 0 0 auto;
+  }
+}

@@ -9,22 +9,26 @@ async function unlock(page: Page): Promise<void> {
   await expect(page.getByText('Persona: Default')).toBeVisible();
 }
 
+async function switchToTab(page: Page, name: string): Promise<void> {
+  await page.getByRole('tab', { name }).click();
+}
+
 async function expectAuditEntries(page: Page, count: number): Promise<void> {
-  await page.getByRole('button', { name: 'Dashboard' }).click();
+  await switchToTab(page, 'Dashboard');
   await expect(page.getByText(`Entries: ${count}`)).toBeVisible();
 }
 
 test('updates connector catalog, adds an agent connector, exports agent job', async ({ page }) => {
   await unlock(page);
 
-  await page.getByRole('button', { name: 'Connectors' }).click();
+  await switchToTab(page, 'Connectors');
   await expect(page.getByRole('heading', { name: 'Connectors', exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Update Catalog' }).click();
   await expect(page.getByText('Signature verified: yes')).toBeVisible({ timeout: 15_000 });
   await expectAuditEntries(page, 1);
 
-  await page.getByRole('button', { name: 'Connectors' }).click();
+  await switchToTab(page, 'Connectors');
 
   const agentCatalogRow = page
     .getByRole('listitem')
@@ -33,7 +37,7 @@ test('updates connector catalog, adds an agent connector, exports agent job', as
   await agentCatalogRow.getByRole('button', { name: 'Add To Persona' }).click();
   await expectAuditEntries(page, 2);
 
-  await page.getByRole('button', { name: 'Connectors' }).click();
+  await switchToTab(page, 'Connectors');
 
   await expect(page.getByRole('heading', { name: 'My Connectors' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Export Agent Job' })).toBeVisible();
@@ -57,7 +61,7 @@ test('updates connector catalog, adds an agent connector, exports agent job', as
 test('exports an encrypted backup', async ({ page }) => {
   await unlock(page);
 
-  await page.getByRole('button', { name: 'Backup' }).click();
+  await switchToTab(page, 'Backup');
 
   const [download] = await Promise.all([
     page.waitForEvent('download'),

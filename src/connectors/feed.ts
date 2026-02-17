@@ -2,6 +2,7 @@ import { z } from 'zod';
 import * as ed from '@noble/ed25519';
 import { sha512 } from '@noble/hashes/sha2.js';
 import type { ConnectorDefinition } from '../core/types';
+import { fromBase64, isRecord } from '../core/utils';
 
 ed.hashes.sha512 = sha512;
 
@@ -21,20 +22,6 @@ export interface CachedConnectorFeedV1 {
 }
 
 const cachedFeedStorageKey = 'unlinkd.connectors.feed.v1';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object';
-}
-
-function fromBase64(value: string): Uint8Array {
-  const cleaned = value.trim();
-  const binary = atob(cleaned);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  return bytes;
-}
 
 function signatureUrlFor(feedUrl: string): string {
   return feedUrl.endsWith('.json') ? feedUrl.slice(0, -'.json'.length) + '.sig' : `${feedUrl}.sig`;

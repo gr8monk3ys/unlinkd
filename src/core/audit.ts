@@ -1,4 +1,5 @@
-import { decryptJson, encryptJson } from './crypto';
+import { decryptJson, encryptJson, sha256Hex } from './crypto';
+import { isRecord } from './utils';
 
 export const auditActions = [
   'identifier_added',
@@ -31,15 +32,10 @@ export interface AuditRecord {
 }
 
 const auditStorageKey = 'unlinkd.audit.v1';
-const textEncoder = new TextEncoder();
 
 interface AuditEnvelope {
   version: 1;
   records: AuditRecord[];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object';
 }
 
 function isAuditAction(value: unknown): value is AuditAction {
@@ -72,13 +68,6 @@ function isAuditEnvelope(value: unknown): value is AuditEnvelope {
   }
 
   return value.version === 1 && isAuditRecordArray(value.records);
-}
-
-async function sha256Hex(input: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', textEncoder.encode(input));
-  return Array.from(new Uint8Array(digest))
-    .map((value) => value.toString(16).padStart(2, '0'))
-    .join('');
 }
 
 async function readAuditEnvelope(passphrase: string): Promise<AuditEnvelope | null> {

@@ -42,7 +42,7 @@ export interface Account {
 export interface ExposureNode {
   id: string;
   label: string;
-  type: 'identifier' | 'account' | 'broker_listing';
+  type: 'identifier' | 'account' | 'broker_listing' | 'email' | 'phone' | 'username' | 'address' | 'legal_name' | 'device';
 }
 
 export interface ExposureEdge {
