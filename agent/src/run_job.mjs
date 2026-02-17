@@ -18,13 +18,35 @@ function substituteTemplates(value, variables) {
   });
 }
 
+const MAX_VARIABLE_LENGTH = 4000;
+
 function resolveAction(action, variables) {
-  return {
+  const resolved = {
     kind: action.kind,
     selector: action.selector ? substituteTemplates(action.selector, variables) : undefined,
     value: action.value ? substituteTemplates(action.value, variables) : undefined,
     url: action.url ? substituteTemplates(action.url, variables) : undefined
   };
+
+  if (resolved.url) {
+    let parsed;
+    try {
+      parsed = new URL(resolved.url);
+    } catch {
+      throw new Error(`Invalid URL: ${resolved.url}`);
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      throw new Error(`Rejected URL protocol "${parsed.protocol}" — only http: and https: are allowed.`);
+    }
+  }
+
+  for (const field of ['selector', 'value', 'url']) {
+    if (resolved[field] && resolved[field].length > MAX_VARIABLE_LENGTH) {
+      throw new Error(`Resolved ${field} exceeds maximum length of ${MAX_VARIABLE_LENGTH} characters.`);
+    }
+  }
+
+  return resolved;
 }
 
 async function waitForText(page, text, timeoutMs = 20_000) {
@@ -61,7 +83,7 @@ export async function runAgentJob(job, options) {
         if (!action.url) {
           throw new Error(`Step ${step.id} navigate requires url.`);
         }
-        await page.goto(action.url, { waitUntil: 'domcontentloaded' });
+        await page.goto(action.url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
         continue;
       }
 
@@ -69,7 +91,7 @@ export async function runAgentJob(job, options) {
         if (!action.selector) {
           throw new Error(`Step ${step.id} click requires selector.`);
         }
-        await page.click(action.selector);
+        await page.click(action.selector, { timeout: 15_000 });
         continue;
       }
 
@@ -77,7 +99,7 @@ export async function runAgentJob(job, options) {
         if (!action.selector || action.value === undefined) {
           throw new Error(`Step ${step.id} fill requires selector and value.`);
         }
-        await page.fill(action.selector, action.value);
+        await page.fill(action.selector, action.value, { timeout: 15_000 });
         continue;
       }
 
@@ -89,9 +111,9 @@ export async function runAgentJob(job, options) {
       if (action.kind === 'screenshot') {
         let bytes;
         if (action.selector) {
-          bytes = await page.locator(action.selector).first().screenshot();
+          bytes = await page.locator(action.selector).first().screenshot({ timeout: 30_000 });
         } else {
-          bytes = await page.screenshot({ fullPage: true });
+          bytes = await page.screenshot({ fullPage: true, timeout: 30_000 });
         }
 
         const sha256 = sha256HexBytes(bytes);

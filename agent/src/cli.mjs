@@ -89,11 +89,19 @@ function parseArgs(argv) {
   return out;
 }
 
+function validateFilePath(filePath) {
+  if (filePath.includes('\0')) {
+    throw new Error('File path contains null bytes.');
+  }
+}
+
 function mustReadFile(filePath) {
+  validateFilePath(filePath);
   return fs.readFileSync(filePath, 'utf8');
 }
 
 function ensureDir(filePath) {
+  validateFilePath(filePath);
   const dir = path.dirname(filePath);
   fs.mkdirSync(dir, { recursive: true });
 }

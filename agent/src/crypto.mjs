@@ -35,7 +35,7 @@ export async function encryptBytes(bytes, passphrase) {
   const iterations = DEFAULT_PBKDF2_ITERATIONS;
   const key = await deriveAesKeyPbkdf2(passphrase, salt, iterations);
 
-  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, bytes);
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, tagLength: 128 }, key, bytes);
 
   return {
     version: 1,

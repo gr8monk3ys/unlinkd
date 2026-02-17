@@ -1,10 +1,10 @@
-import type { ExposureEdge, ExposureGraph, Identifier } from './types';
+import type { ExposureEdge, ExposureGraph, ExposureNode, Identifier } from './types';
 
-function asNode(identifier: Identifier): { id: string; label: string; type: 'identifier' } {
+function asNode(identifier: Identifier): ExposureNode {
   return {
     id: identifier.id,
     label: `${identifier.type}:${identifier.value}`,
-    type: 'identifier'
+    type: identifier.type
   };
 }
 

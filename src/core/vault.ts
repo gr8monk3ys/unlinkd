@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { decryptJson, encryptJson } from './crypto';
 import type { Account, ConnectorInstance, Identifier, Persona, RiskFinding } from './types';
+import { isRecord, nowIso } from './utils';
 
 const vaultStorageKey = 'unlinkd.vault.v1';
 
@@ -13,14 +14,6 @@ export interface VaultStateV1 {
   accounts: Account[];
   connectorInstances: ConnectorInstance[];
   findings: RiskFinding[];
-}
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object';
 }
 
 const personaSchema = z.object({
@@ -174,7 +167,10 @@ function readRawVault(): string | null {
 function writeRawVault(value: string): void {
   try {
     localStorage.setItem(vaultStorageKey, value);
-  } catch {
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      throw new Error('Vault storage quota exceeded. Export a backup and clear old data.');
+    }
     throw new Error('Unable to persist vault.');
   }
 }
