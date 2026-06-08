@@ -13,6 +13,7 @@ function emptyVault(overrides?: Partial<VaultStateV1>): VaultStateV1 {
     accounts: [],
     connectorInstances: [],
     findings: [],
+    settings: {},
     ...overrides
   };
 }

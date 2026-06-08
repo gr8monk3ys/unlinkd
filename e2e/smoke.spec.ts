@@ -4,8 +4,10 @@ import type { Page } from '@playwright/test';
 
 async function unlock(page: Page): Promise<void> {
   await page.goto('/');
-  await page.getByLabel('Passphrase').fill('test-passphrase');
-  await page.getByRole('button', { name: 'Unlock Storage' }).click();
+  // A fresh browser context has no vault, so we create one first.
+  await page.getByLabel('Passphrase', { exact: true }).fill('test-passphrase');
+  await page.getByLabel('Confirm passphrase').fill('test-passphrase');
+  await page.getByRole('button', { name: 'Create Vault' }).click();
   await expect(page.getByText('Persona: Default')).toBeVisible();
 }
 

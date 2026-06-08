@@ -56,7 +56,8 @@ const connectorDefinitionSchema = z.object({
   description: z.string().min(1),
   defaultRecheckDays: z.number().int().positive(),
   steps: z.array(connectorStepSchema).min(1),
-  jurisdictions: z.array(z.string()).optional()
+  jurisdictions: z.array(z.string()).optional(),
+  lastReviewed: z.string().optional()
 });
 
 const feedSchema = z.object({

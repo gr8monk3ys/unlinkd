@@ -2,13 +2,46 @@
 
 A local-first MVP for personal digital disappearance workflows and OSINT self-scan tooling.
 
+It runs entirely in the browser: all data (personas, identifiers, accounts,
+connectors, findings, evidence, audit log) is encrypted with your passphrase and
+stored locally. There is no backend and no account.
+
 ## Product Requirements
 
-- `docs/PRD-digital-disappearance.md`
+- `docs/PRD-digital-disappearance.md` — the **long-term vision**. Much of it is
+  intentionally aspirational; see *Implementation status* below for what is
+  actually shipped today.
 
-## Reports
+## Reports & governance
 
 - `docs/code-quality-report.md`
+- `docs/connector-governance.md` — how the connector catalog is reviewed and
+  kept fresh.
+
+## Implementation status
+
+Shipped today:
+
+- Encrypted local vault, evidence store (IndexedDB), and hash-chained audit log.
+- Passphrase-protected unlock with a create-vault flow (confirm + strength
+  meter) and an explicit "no recovery" wipe path.
+- Persona management and cross-persona reuse policy warnings.
+- Identifier ingestion with validation/normalization and policy limits.
+- Heuristic local scan (consent-aware) producing prioritized risk findings.
+- Findings status workflow (open → in progress → mitigated).
+- Have I Been Pwned integration (Settings tab): optional breach lookup during
+  scans via a stored API key, plus a free k-anonymity password breach check and
+  manual exposure-check suggestions.
+- Signed connector catalog feed + in-app update/import, with a freshness policy.
+- Account discovery imports (password-manager CSV + mailbox discovery).
+- Encrypted backup export/import and exportable Markdown reports.
+- Optional local Playwright agent for connector automation/evidence capture.
+
+Not yet built (tracked in the PRD as future work): cross-device sync, MFA
+posture scoring, recovery-factor enforcement, jurisdiction compliance profiles,
+and the self-hosted infrastructure/network stack. Connector *automation* is
+minimal today — the catalog is overwhelmingly guided manual checklists with only
+a couple of agent-automated steps.
 
 ## MVP Features
 

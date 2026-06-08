@@ -170,6 +170,17 @@ export async function sha256Hex(value: string): Promise<string> {
     .join('');
 }
 
+/**
+ * SHA-1 hex digest. Used only for the HIBP Pwned Passwords k-anonymity range
+ * API, which is defined in terms of SHA-1. Not used for any security boundary.
+ */
+export async function sha1Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-1', encoder.encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 export async function sha256HexBytes(value: Uint8Array): Promise<string> {
   const stable: Uint8Array<ArrayBuffer> =
     value.buffer instanceof ArrayBuffer ? (value as Uint8Array<ArrayBuffer>) : new Uint8Array(value);

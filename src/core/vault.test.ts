@@ -1,9 +1,40 @@
 import { describe, it, expect } from 'vitest';
-import { createEmptyVault, saveVault, unlockVault, loadVault, clearVaultCiphertext, getRawVaultCiphertext } from './vault';
+import {
+  createEmptyVault,
+  saveVault,
+  unlockVault,
+  loadVault,
+  clearVaultCiphertext,
+  getRawVaultCiphertext,
+  vaultExists
+} from './vault';
 
 const TEST_PASSPHRASE = 'test-passphrase-123';
 
 describe('vault', () => {
+  describe('settings', () => {
+    it('initializes empty settings', () => {
+      expect(createEmptyVault().settings).toEqual({});
+    });
+
+    it('round-trips an encrypted HIBP api key through settings', async () => {
+      clearVaultCiphertext();
+      const vault = createEmptyVault();
+      vault.settings = { hibpApiKey: 'secret-key' };
+      await saveVault(vault, TEST_PASSPHRASE);
+
+      const loaded = await loadVault(TEST_PASSPHRASE);
+      expect(loaded?.settings.hibpApiKey).toBe('secret-key');
+
+      // The raw stored value must not leak the key in plaintext.
+      expect(getRawVaultCiphertext()).not.toContain('secret-key');
+    });
+
+    it('reports vault existence', () => {
+      clearVaultCiphertext();
+      expect(vaultExists()).toBe(false);
+    });
+  });
   describe('createEmptyVault', () => {
     it('returns a valid VaultStateV1 with version 1', () => {
       const vault = createEmptyVault();
