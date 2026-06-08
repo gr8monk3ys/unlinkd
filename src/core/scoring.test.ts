@@ -2,54 +2,49 @@ import { describe, expect, it } from 'vitest';
 import { scoreFinding, sortFindingsByPriority } from './scoring';
 import type { RiskFinding } from './types';
 
-function makeFinding(overrides: Partial<RiskFinding> & Pick<RiskFinding, 'id' | 'title' | 'harm' | 'exploitability' | 'tier'>): RiskFinding {
+function makeFinding(
+  overrides: Partial<RiskFinding> & Pick<RiskFinding, 'id' | 'title' | 'harm' | 'exploitability' | 'tier'>
+): RiskFinding {
   return overrides;
 }
 
 describe('scoring', () => {
   describe('scoreFinding', () => {
-    it('applies high tier multiplier (1.25)', () => {
-      const score = scoreFinding(makeFinding({
-        id: 'f', title: 'High risk', harm: 8, exploitability: 8, tier: 'high'
-      }));
-
-      // weighted = 8*0.6 + 8*0.4 = 8, score = round(8 * 1.25) = 10
-      expect(score).toBe(10);
+    it('scores on a 0-100 scale', () => {
+      // base = (9*0.6 + 8*0.4)/10 = 0.86; *1.15 (high) *1.0 (open) *100 = 98.9 -> 99
+      const score = scoreFinding(makeFinding({ id: 'f', title: 'High', harm: 9, exploitability: 8, tier: 'high' }));
+      expect(score).toBe(99);
     });
 
-    it('applies moderate tier multiplier (1.0)', () => {
-      const score = scoreFinding(makeFinding({
-        id: 'f', title: 'Moderate', harm: 6, exploitability: 4, tier: 'moderate'
-      }));
-
-      // weighted = 6*0.6 + 4*0.4 = 5.2, score = round(5.2 * 1) = 5
-      expect(score).toBe(5);
+    it('ranks tiers: high > moderate > low for equal harm/exploitability', () => {
+      const base = { harm: 6, exploitability: 6 } as const;
+      const high = scoreFinding(makeFinding({ id: 'h', title: 'H', tier: 'high', ...base }));
+      const moderate = scoreFinding(makeFinding({ id: 'm', title: 'M', tier: 'moderate', ...base }));
+      const low = scoreFinding(makeFinding({ id: 'l', title: 'L', tier: 'low', ...base }));
+      expect(high).toBeGreaterThan(moderate);
+      expect(moderate).toBeGreaterThan(low);
     });
 
-    it('applies low tier multiplier (0.8)', () => {
-      const score = scoreFinding(makeFinding({
-        id: 'f', title: 'Low', harm: 5, exploitability: 5, tier: 'low'
-      }));
-
-      // weighted = 5*0.6 + 5*0.4 = 5, score = round(5 * 0.8) = 4
-      expect(score).toBe(4);
+    it('sinks findings that are in progress or mitigated below open ones', () => {
+      const fields = { harm: 8, exploitability: 8, tier: 'high' as const };
+      const open = scoreFinding(makeFinding({ id: 'o', title: 'O', status: 'open', ...fields }));
+      const inProgress = scoreFinding(makeFinding({ id: 'p', title: 'P', status: 'in_progress', ...fields }));
+      const mitigated = scoreFinding(makeFinding({ id: 'm', title: 'M', status: 'mitigated', ...fields }));
+      expect(open).toBeGreaterThan(inProgress);
+      expect(inProgress).toBeGreaterThan(mitigated);
     });
 
-    it('handles zero harm and exploitability', () => {
-      const score = scoreFinding(makeFinding({
-        id: 'f', title: 'Zero', harm: 0, exploitability: 0, tier: 'high'
-      }));
-
-      expect(score).toBe(0);
+    it('treats a missing status as open', () => {
+      const fields = { id: 'f', title: 'F', harm: 7, exploitability: 7, tier: 'moderate' as const };
+      expect(scoreFinding(makeFinding(fields))).toBe(scoreFinding(makeFinding({ ...fields, status: 'open' })));
     });
 
-    it('handles maximum values', () => {
-      const score = scoreFinding(makeFinding({
-        id: 'f', title: 'Max', harm: 10, exploitability: 10, tier: 'high'
-      }));
+    it('returns 0 for zero harm and exploitability', () => {
+      expect(scoreFinding(makeFinding({ id: 'f', title: 'Z', harm: 0, exploitability: 0, tier: 'high' }))).toBe(0);
+    });
 
-      // weighted = 10*0.6 + 10*0.4 = 10, score = round(10 * 1.25) = 13
-      expect(score).toBe(13);
+    it('clamps to at most 100', () => {
+      expect(scoreFinding(makeFinding({ id: 'f', title: 'Max', harm: 10, exploitability: 10, tier: 'high' }))).toBe(100);
     });
   });
 
@@ -59,8 +54,15 @@ describe('scoring', () => {
         makeFinding({ id: 'a', title: 'A', harm: 3, exploitability: 2, tier: 'low' }),
         makeFinding({ id: 'b', title: 'B', harm: 8, exploitability: 8, tier: 'high' })
       ]);
-
       expect(sorted[0]?.id).toBe('b');
+    });
+
+    it('ranks an open low-tier finding above a mitigated high-tier one', () => {
+      const sorted = sortFindingsByPriority([
+        makeFinding({ id: 'mit', title: 'Mitigated high', harm: 9, exploitability: 9, tier: 'high', status: 'mitigated' }),
+        makeFinding({ id: 'open', title: 'Open low', harm: 4, exploitability: 3, tier: 'low', status: 'open' })
+      ]);
+      expect(sorted[0]?.id).toBe('open');
     });
 
     it('returns empty array for empty input', () => {
@@ -73,18 +75,16 @@ describe('scoring', () => {
         makeFinding({ id: 'b', title: 'B', harm: 8, exploitability: 8, tier: 'high' })
       ];
       const sorted = sortFindingsByPriority(original);
-
       expect(original[0]?.id).toBe('a');
       expect(sorted[0]?.id).toBe('b');
     });
 
-    it('preserves order for equal scores', () => {
+    it('breaks ties deterministically by title', () => {
       const sorted = sortFindingsByPriority([
-        makeFinding({ id: 'a', title: 'A', harm: 5, exploitability: 5, tier: 'moderate' }),
-        makeFinding({ id: 'b', title: 'B', harm: 5, exploitability: 5, tier: 'moderate' })
+        makeFinding({ id: 'z', title: 'Zebra', harm: 5, exploitability: 5, tier: 'moderate' }),
+        makeFinding({ id: 'a', title: 'Apple', harm: 5, exploitability: 5, tier: 'moderate' })
       ]);
-
-      expect(sorted).toHaveLength(2);
+      expect(sorted.map((f) => f.id)).toEqual(['a', 'z']);
     });
   });
 });
