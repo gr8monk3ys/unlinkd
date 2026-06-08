@@ -40,8 +40,10 @@ Shipped today:
 Not yet built (tracked in the PRD as future work): cross-device sync, MFA
 posture scoring, recovery-factor enforcement, jurisdiction compliance profiles,
 and the self-hosted infrastructure/network stack. Connector *automation* is
-minimal today — the catalog is overwhelmingly guided manual checklists with only
-a couple of agent-automated steps.
+still the minority of the catalog — most connectors are guided manual
+checklists, with a small set of agent-automated evidence-capture connectors
+(navigate + screenshot of a broker listing, self-search results, or account
+security settings) run via the optional local Playwright agent.
 
 ## MVP Features
 

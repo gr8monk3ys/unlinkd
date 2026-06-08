@@ -1,7 +1,7 @@
 {
   "version": 1,
   "catalogVersion": "2026-06-08",
-  "generatedAt": "2026-06-08T16:16:41.026Z",
+  "generatedAt": "2026-06-08T18:40:47.469Z",
   "connectors": [
     {
       "id": "account-airbnb",
@@ -700,6 +700,93 @@
           "title": "Minimize profile fields",
           "instructions": "Remove phone, location, and external links that create join keys. Consider setting a neutral profile image and bio if needed.",
           "evidenceHint": "Before/after screenshots"
+        }
+      ],
+      "lastReviewed": "2026-06-08"
+    },
+    {
+      "id": "agent-account-security-capture",
+      "name": "Agent: Capture Account Security Settings",
+      "category": "account",
+      "description": "Automated browser run that opens an account security/privacy settings page and captures a screenshot to document MFA and recovery posture.",
+      "defaultRecheckDays": 90,
+      "steps": [
+        {
+          "id": "navigate",
+          "type": "agent",
+          "title": "Navigate to the target page",
+          "action": {
+            "kind": "navigate",
+            "url": "{{settingsUrl}}"
+          },
+          "evidenceHint": "Page load"
+        },
+        {
+          "id": "screenshot",
+          "type": "agent",
+          "title": "Capture full-page screenshot",
+          "action": {
+            "kind": "screenshot"
+          },
+          "evidenceHint": "Screenshot"
+        }
+      ],
+      "lastReviewed": "2026-06-08"
+    },
+    {
+      "id": "agent-broker-listing-capture",
+      "name": "Agent: Capture Broker Listing",
+      "category": "broker",
+      "description": "Automated browser run that opens a recorded data-broker listing URL and captures an encrypted screenshot as before/after removal evidence.",
+      "defaultRecheckDays": 45,
+      "steps": [
+        {
+          "id": "navigate",
+          "type": "agent",
+          "title": "Navigate to the target page",
+          "action": {
+            "kind": "navigate",
+            "url": "{{listingUrl}}"
+          },
+          "evidenceHint": "Page load"
+        },
+        {
+          "id": "screenshot",
+          "type": "agent",
+          "title": "Capture full-page screenshot",
+          "action": {
+            "kind": "screenshot"
+          },
+          "evidenceHint": "Screenshot"
+        }
+      ],
+      "lastReviewed": "2026-06-08"
+    },
+    {
+      "id": "agent-search-selfcheck",
+      "name": "Agent: Capture Self-Search Results",
+      "category": "search",
+      "description": "Automated browser run that opens a search-results URL for your identifiers and captures a screenshot to track exposure over time.",
+      "defaultRecheckDays": 30,
+      "steps": [
+        {
+          "id": "navigate",
+          "type": "agent",
+          "title": "Navigate to the target page",
+          "action": {
+            "kind": "navigate",
+            "url": "{{searchUrl}}"
+          },
+          "evidenceHint": "Page load"
+        },
+        {
+          "id": "screenshot",
+          "type": "agent",
+          "title": "Capture full-page screenshot",
+          "action": {
+            "kind": "screenshot"
+          },
+          "evidenceHint": "Screenshot"
         }
       ],
       "lastReviewed": "2026-06-08"
