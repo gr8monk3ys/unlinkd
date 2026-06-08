@@ -112,4 +112,3 @@ export function getConnectorDefinition(
 ): ConnectorDefinition | null {
   return catalog.find((connector) => connector.id === connectorId) ?? null;
 }
-
