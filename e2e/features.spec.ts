@@ -68,7 +68,8 @@ test('saves the HIBP API key in Settings', async ({ page }) => {
   await createVault(page);
 
   await switchToTab(page, 'Settings');
-  await page.getByLabel('API key').fill('my-hibp-key');
+  // Exact match: the section is also labelled "...API key" via its heading.
+  await page.getByLabel('API key', { exact: true }).fill('my-hibp-key');
   await page.getByRole('button', { name: 'Save API Key' }).click();
   await expect(page.getByText('API key saved to vault.')).toBeVisible();
 });
