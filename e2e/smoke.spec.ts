@@ -4,9 +4,12 @@ import type { Page } from '@playwright/test';
 
 async function unlock(page: Page): Promise<void> {
   await page.goto('/');
-  // A fresh browser context has no vault, so we create one first.
-  await page.getByLabel('Passphrase', { exact: true }).fill('test-passphrase');
-  await page.getByLabel('Confirm passphrase').fill('test-passphrase');
+  // A fresh browser context has no vault, so we create one first. The passphrase
+  // must clear the create-vault strength gate (and must not contain the weak
+  // substring "passphrase").
+  const passphrase = 'correct-horse-staple-9';
+  await page.getByLabel('Passphrase', { exact: true }).fill(passphrase);
+  await page.getByLabel('Confirm passphrase').fill(passphrase);
   await page.getByRole('button', { name: 'Create Vault' }).click();
   await expect(page.getByText('Persona: Default')).toBeVisible();
 }
