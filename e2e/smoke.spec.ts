@@ -45,6 +45,9 @@ test('updates connector catalog, adds an agent connector, exports agent job', as
   await switchToTab(page, 'Connectors');
 
   await expect(page.getByRole('heading', { name: 'My Connectors' })).toBeVisible();
+
+  // Instance cards are collapsed by default; expand it to reveal its actions.
+  await page.getByRole('button', { name: /Agent: Capture URL Screenshot/ }).click();
   await expect(page.getByRole('button', { name: 'Export Agent Job' })).toBeVisible();
 
   const [download] = await Promise.all([

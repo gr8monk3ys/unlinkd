@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "catalogVersion": "2026-02-17",
-  "generatedAt": "2026-02-17T00:14:05.856Z",
+  "catalogVersion": "2026-06-08",
+  "generatedAt": "2026-06-08T16:16:41.026Z",
   "connectors": [
     {
       "id": "account-airbnb",
@@ -38,7 +38,8 @@
           "instructions": "Remove non-essential profile information and review public profile visibility.",
           "evidenceHint": "Before/after screenshots"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-amazon",
@@ -75,7 +76,8 @@
           "instructions": "Review ad personalization and data sharing settings. Disable what you don't need.",
           "evidenceHint": "Settings screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-apple",
@@ -112,7 +114,8 @@
           "instructions": "Review trusted phone numbers and recovery contacts. Remove anything that is stale or cross-persona linkable.",
           "evidenceHint": "Settings screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-discord",
@@ -149,7 +152,8 @@
           "instructions": "Remove links or identifiers that create join keys. Avoid reusing unique usernames across personas.",
           "evidenceHint": "Before/after screenshots"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-dropbox",
@@ -186,7 +190,8 @@
           "instructions": "Audit shared links and connected apps. Remove what you don't need and expire public links where possible.",
           "evidenceHint": "Access list screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-facebook",
@@ -216,7 +221,8 @@
           "instructions": "Remove public fields (phone, address, employer, education). Tighten privacy settings and review connected apps.",
           "evidenceHint": "Settings screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-github",
@@ -253,7 +259,8 @@
           "instructions": "Review personal access tokens, OAuth apps, SSH keys, and active sessions. Revoke anything unknown or unused.",
           "evidenceHint": "Access list screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-google",
@@ -290,7 +297,8 @@
           "instructions": "Review recovery email/phone and device prompts. Remove anything you don't control or that links personas. Confirm account recovery settings match your threat model.",
           "evidenceHint": "Settings screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-instagram",
@@ -327,7 +335,8 @@
           "instructions": "Remove links, location hints, and identifiers that create join keys. Review tagged photos and mentions.",
           "evidenceHint": "Before/after screenshots"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-linkedin",
@@ -357,7 +366,8 @@
           "instructions": "Review public profile settings, search engine visibility, and contact info visibility. Restrict who can see email/phone and connections.",
           "evidenceHint": "Settings screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-microsoft",
@@ -394,7 +404,8 @@
           "instructions": "Review account aliases, recovery email/phone, and sign-in activity. Remove stale recovery methods and revoke unknown sessions.",
           "evidenceHint": "Settings screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-netflix",
@@ -431,7 +442,8 @@
           "instructions": "Review signed-in devices and sign out of unknown sessions. Rotate password if needed.",
           "evidenceHint": "Settings screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-paypal",
@@ -468,7 +480,8 @@
           "instructions": "Review recent sign-in activity and revoke unknown sessions/devices.",
           "evidenceHint": "Activity screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-reddit",
@@ -505,7 +518,8 @@
           "instructions": "Remove links and personal identifiers. Review posts/comments for self-doxxing and delete sensitive history if needed.",
           "evidenceHint": "Before/after screenshots"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-snapchat",
@@ -542,7 +556,8 @@
           "instructions": "Enable MFA and review recovery methods. Prefer app-based authentication over SMS when possible.",
           "evidenceHint": "Settings screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-spotify",
@@ -579,7 +594,8 @@
           "instructions": "Review profile name, social links, and any public-facing identifiers. Avoid reusing unique usernames across personas.",
           "evidenceHint": "Before/after screenshots"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-tiktok",
@@ -616,7 +632,8 @@
           "instructions": "Remove links and identifiers that create join keys. Review past posts for sensitive metadata.",
           "evidenceHint": "Before/after screenshots"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-uber",
@@ -653,7 +670,8 @@
           "instructions": "Review ad personalization and data sharing options. Disable what you don't need.",
           "evidenceHint": "Settings screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "account-x",
@@ -683,7 +701,8 @@
           "instructions": "Remove phone, location, and external links that create join keys. Consider setting a neutral profile image and bio if needed.",
           "evidenceHint": "Before/after screenshots"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "agent-url-screenshot",
@@ -711,7 +730,8 @@
           },
           "evidenceHint": "Screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-411",
@@ -744,7 +764,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-anywho",
@@ -777,7 +798,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-beenverified",
@@ -810,7 +832,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-clustrmaps",
@@ -843,7 +866,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-fastpeoplesearch",
@@ -876,7 +900,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-instantcheckmate",
@@ -909,7 +934,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-intelius",
@@ -942,7 +968,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-mylife",
@@ -975,7 +1002,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-nuwber",
@@ -1008,7 +1036,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-peekyou",
@@ -1041,7 +1070,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-peoplefinders",
@@ -1074,7 +1104,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-radaris",
@@ -1107,7 +1138,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-smartbackgroundchecks",
@@ -1140,7 +1172,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-spokeo",
@@ -1173,7 +1206,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-thatsthem",
@@ -1206,7 +1240,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-truepeoplesearch",
@@ -1239,7 +1274,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-truthfinder",
@@ -1272,7 +1308,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-ussearch",
@@ -1305,7 +1342,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-whitepages",
@@ -1338,7 +1376,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "broker-zabasearch",
@@ -1371,7 +1410,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "other-chexsystems-freeze",
@@ -1397,7 +1437,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "other-credit-freeze-us",
@@ -1437,7 +1478,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "other-email-aliasing",
@@ -1467,7 +1509,8 @@
           "instructions": "Choose a strategy (provider aliases, custom domain, or alias service). Ensure you can rotate aliases if one is leaked.",
           "evidenceHint": "Notes"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "other-nctue-optout",
@@ -1493,7 +1536,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "other-optout-prescreen",
@@ -1519,7 +1563,8 @@
       ],
       "jurisdictions": [
         "US"
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "other-sim-swap-protection",
@@ -1549,7 +1594,8 @@
           "instructions": "Review authorized users on the account and enable security notifications for SIM/port changes.",
           "evidenceHint": "Settings screenshot"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "search-bing",
@@ -1572,7 +1618,8 @@
           "instructions": "Search for your name variants, usernames, emails, phone number, and address. Record URLs that expose or link your identifiers.",
           "evidenceHint": "URL list + screenshots"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "search-duckduckgo",
@@ -1595,7 +1642,8 @@
           "instructions": "Search for your name variants, usernames, emails, phone number, and address. Record URLs that expose or link your identifiers.",
           "evidenceHint": "URL list + screenshots"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     },
     {
       "id": "search-google",
@@ -1618,7 +1666,8 @@
           "instructions": "Search for your name variants, usernames, emails, phone number, and address. Record URLs that expose or link your identifiers.",
           "evidenceHint": "URL list + screenshots"
         }
-      ]
+      ],
+      "lastReviewed": "2026-06-08"
     }
   ]
 }

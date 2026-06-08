@@ -63,7 +63,7 @@ const connectorDefinitionSchema = z.object({
   defaultRecheckDays: z.number().int().positive(),
   steps: z.array(connectorStepSchema).min(1),
   jurisdictions: z.array(z.string()).optional(),
-  lastReviewed: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, 'lastReviewed must be an ISO date (YYYY-MM-DD)').optional()
+  lastReviewed: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, 'lastReviewed must be an ISO date (YYYY-MM-DD)')
 });
 
 const sourceSchema = z.array(connectorDefinitionSchema);

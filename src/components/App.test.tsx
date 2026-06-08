@@ -144,6 +144,9 @@ describe('App findings lifecycle', () => {
     // before triggering the scan (otherwise the scan is a no-op).
     expect(await screen.findByText('Entries: 1')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Run Local Scan' }));
+    // Wait for the scan_ran audit write so the busy guard is released before
+    // the next action (otherwise marking the finding is a no-op).
+    expect(await screen.findByText('Entries: 2')).toBeInTheDocument();
 
     await switchToTab('Findings');
     expect(await screen.findByText(/consider using an alias/)).toBeInTheDocument();

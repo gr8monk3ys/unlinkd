@@ -79,7 +79,7 @@ const config = getAppConfig();
 
 const connectorFeedUrl = import.meta.env.VITE_CONNECTOR_FEED_URL ?? '/connectors/catalog.v1.json';
 const connectorFeedPublicKeyBase64 =
-  import.meta.env.VITE_CONNECTOR_FEED_PUBKEY ?? 'FiAlRtS1CL7W/iJW1Em7wLtVe8oMcSUcDu+6xJd8oko=';
+  import.meta.env.VITE_CONNECTOR_FEED_PUBKEY ?? 'sRrWiocnHbnAcLQ59Bl6gQVUoDUVeLVw2lesvu2mWKM=';
 
 function addDaysIso(days: number): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
