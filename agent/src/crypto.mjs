@@ -46,4 +46,3 @@ export async function encryptBytes(bytes, passphrase) {
     ciphertext: toBase64(new Uint8Array(ciphertext))
   };
 }
-

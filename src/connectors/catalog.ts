@@ -10,6 +10,7 @@ export const builtinConnectorCatalog: ConnectorDefinition[] = [
     category: 'broker',
     description: 'Guided opt-out workflow for removing public listing entries.',
     defaultRecheckDays: 45,
+    lastReviewed: '2026-06-08',
     steps: [
       {
         id: 'search',
@@ -43,6 +44,7 @@ export const builtinConnectorCatalog: ConnectorDefinition[] = [
     category: 'search',
     description: 'Track top exposed queries and URLs for your identifiers.',
     defaultRecheckDays: 30,
+    lastReviewed: '2026-06-08',
     steps: [
       {
         id: 'queries',
@@ -68,6 +70,7 @@ export const builtinConnectorCatalog: ConnectorDefinition[] = [
     category: 'account',
     description: 'Checklist for hardening or deleting a Facebook account.',
     defaultRecheckDays: 90,
+    lastReviewed: '2026-06-08',
     steps: [
       {
         id: 'mfa',
@@ -112,4 +115,3 @@ export function getConnectorDefinition(
 ): ConnectorDefinition | null {
   return catalog.find((connector) => connector.id === connectorId) ?? null;
 }
-

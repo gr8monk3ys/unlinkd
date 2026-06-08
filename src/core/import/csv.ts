@@ -45,4 +45,3 @@ export function splitNonEmptyLines(text: string): string[] {
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 }
-

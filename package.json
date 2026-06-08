@@ -17,7 +17,8 @@
     "test:e2e:ci": "npm run build && playwright test",
     "playwright:install": "playwright install",
     "connectors:keygen": "node scripts/connectors_keygen.mjs",
-    "connectors:publish": "node scripts/connectors_publish.mjs"
+    "connectors:publish": "node scripts/connectors_publish.mjs",
+    "connectors:check": "node scripts/connectors_check_freshness.mjs"
   },
   "keywords": [],
   "author": "",

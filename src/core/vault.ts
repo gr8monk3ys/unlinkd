@@ -5,6 +5,11 @@ import { isRecord, nowIso } from './utils';
 
 const vaultStorageKey = 'unlinkd.vault.v1';
 
+export interface VaultSettings {
+  /** Optional Have I Been Pwned API key, stored encrypted in the vault. */
+  hibpApiKey?: string;
+}
+
 export interface VaultStateV1 {
   version: 1;
   savedAt: string;
@@ -14,6 +19,7 @@ export interface VaultStateV1 {
   accounts: Account[];
   connectorInstances: ConnectorInstance[];
   findings: RiskFinding[];
+  settings: VaultSettings;
 }
 
 const personaSchema = z.object({
@@ -82,6 +88,12 @@ const findingSchema = z.object({
   connectorInstanceId: z.string().optional()
 });
 
+const settingsSchema = z
+  .object({
+    hibpApiKey: z.string().optional()
+  })
+  .optional();
+
 const vaultSchemaV1 = z.object({
   version: z.literal(1),
   savedAt: z.string(),
@@ -90,7 +102,8 @@ const vaultSchemaV1 = z.object({
   identifiers: z.array(identifierSchema),
   accounts: z.array(accountSchema),
   connectorInstances: z.array(connectorInstanceSchema),
-  findings: z.array(findingSchema)
+  findings: z.array(findingSchema),
+  settings: settingsSchema
 });
 
 export function createEmptyVault(): VaultStateV1 {
@@ -108,11 +121,14 @@ export function createEmptyVault(): VaultStateV1 {
     identifiers: [],
     accounts: [],
     connectorInstances: [],
-    findings: []
+    findings: [],
+    settings: {}
   };
 }
 
-function normalizeVault(value: VaultStateV1): VaultStateV1 {
+type ParsedVault = z.infer<typeof vaultSchemaV1>;
+
+function normalizeVault(value: ParsedVault): VaultStateV1 {
   let personas = value.personas;
   if (personas.length === 0) {
     const defaultPersona: Persona = { id: crypto.randomUUID(), name: 'Default', createdAt: nowIso() };
@@ -152,7 +168,8 @@ function normalizeVault(value: VaultStateV1): VaultStateV1 {
     identifiers,
     accounts,
     connectorInstances,
-    findings
+    findings,
+    settings: value.settings ?? {}
   };
 }
 
@@ -231,6 +248,11 @@ export async function unlockVault(passphrase: string): Promise<VaultStateV1 | nu
 
 export function getVaultStorageKey(): string {
   return vaultStorageKey;
+}
+
+/** Returns true if an encrypted vault is already present in local storage. */
+export function vaultExists(): boolean {
+  return readRawVault() !== null;
 }
 
 export function getRawVaultCiphertext(): string | null {

@@ -31,6 +31,7 @@ function makeConnector(overrides?: Partial<ConnectorDefinition>): ConnectorDefin
     description: overrides?.description ?? 'A test connector for unit testing',
     defaultRecheckDays: overrides?.defaultRecheckDays ?? 30,
     steps: overrides?.steps ?? [makeManualStep()],
+    lastReviewed: overrides?.lastReviewed ?? '2026-06-08',
     ...(overrides?.jurisdictions ? { jurisdictions: overrides.jurisdictions } : {})
   };
 }

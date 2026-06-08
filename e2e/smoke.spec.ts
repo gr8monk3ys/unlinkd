@@ -4,8 +4,13 @@ import type { Page } from '@playwright/test';
 
 async function unlock(page: Page): Promise<void> {
   await page.goto('/');
-  await page.getByLabel('Passphrase').fill('test-passphrase');
-  await page.getByRole('button', { name: 'Unlock Storage' }).click();
+  // A fresh browser context has no vault, so we create one first. The passphrase
+  // must clear the create-vault strength gate (and must not contain the weak
+  // substring "passphrase").
+  const passphrase = 'correct-horse-staple-9';
+  await page.getByLabel('Passphrase', { exact: true }).fill(passphrase);
+  await page.getByLabel('Confirm passphrase').fill(passphrase);
+  await page.getByRole('button', { name: 'Create Vault' }).click();
   await expect(page.getByText('Persona: Default')).toBeVisible();
 }
 
@@ -40,6 +45,9 @@ test('updates connector catalog, adds an agent connector, exports agent job', as
   await switchToTab(page, 'Connectors');
 
   await expect(page.getByRole('heading', { name: 'My Connectors' })).toBeVisible();
+
+  // Instance cards are collapsed by default; expand it to reveal its actions.
+  await page.getByRole('button', { name: /Agent: Capture URL Screenshot/ }).click();
   await expect(page.getByRole('button', { name: 'Export Agent Job' })).toBeVisible();
 
   const [download] = await Promise.all([

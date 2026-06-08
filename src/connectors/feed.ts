@@ -56,7 +56,10 @@ const connectorDefinitionSchema = z.object({
   description: z.string().min(1),
   defaultRecheckDays: z.number().int().positive(),
   steps: z.array(connectorStepSchema).min(1),
-  jurisdictions: z.array(z.string()).optional()
+  jurisdictions: z.array(z.string()).optional(),
+  // Required: trusted feeds must declare connector freshness (see
+  // docs/connector-governance.md). Feeds missing this are rejected before caching.
+  lastReviewed: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, 'lastReviewed must be an ISO date (YYYY-MM-DD)')
 });
 
 const feedSchema = z.object({

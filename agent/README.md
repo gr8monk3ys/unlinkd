@@ -34,4 +34,3 @@ node src/cli.mjs mbox-discover /path/to/mailbox.mbox --out ./accounts.csv
 ```
 
 Import `accounts.csv` in the web app under Accounts -> Import Accounts CSV.
-

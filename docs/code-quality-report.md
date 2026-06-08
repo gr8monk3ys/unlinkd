@@ -1,5 +1,38 @@
 # Code Quality & Production Readiness Report
 
+## Addendum (Jun 8, 2026)
+
+This addendum corrects some over-optimistic framing in the original report and
+records a round of feature work that closed real gaps.
+
+**Fixed / shipped in this round:**
+- **HIBP was dead code; now wired.** Breach lookup, the free k-anonymity
+  password check, and manual suggestions were implemented but never reachable
+  from the UI. They are now surfaced in a **Settings** tab and the API key is
+  stored encrypted in the vault and passed into local scans.
+- **Real bug fixed:** the password breach check hashed with SHA-256 while the
+  Pwned Passwords range API is defined over **SHA-1**, so it would always have
+  returned 0 matches. Now uses SHA-1 (security-irrelevant; correctness only).
+- **Findings are now actionable** (open → in progress → mitigated), persisted
+  and audited; the dashboard reflects open counts. Previously the status field
+  existed in the model but could never change.
+- **Passphrase data-loss trap fixed:** vault creation now distinguishes
+  "no vault" from "wrong passphrase", requires confirm + a strength check, and
+  exposes an explicit "no recovery / wipe" path.
+- **`App.tsx` decomposed:** all state and handlers moved into a
+  `useUnlinkdApp` hook; the component is now a thin view. Integration tests
+  added for create/unlock, scan→mitigate, and settings.
+- **Connector content governance:** every connector now carries a
+  `lastReviewed` date enforced by a freshness test + `connectors:check` script,
+  documented in `docs/connector-governance.md`.
+
+**Honest reframing of the original scores:** the prior "7.8/10, pilot-ready"
+was generous. Connector *automation* remains minimal (a handful of agent steps
+vs. ~150 manual ones), there is no cross-device sync by design, and large parts
+of the PRD (MFA posture, recovery enforcement, compliance profiles, infra
+stack) are unbuilt. Treat this as a solid local-first MVP, not a production
+service.
+
 ## Scope
 Assessment of the current TypeScript/React MVP codebase for maintainability, reliability, security posture, testing, and delivery readiness.
 

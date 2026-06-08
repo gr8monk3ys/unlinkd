@@ -16,6 +16,8 @@ export const auditActions = [
   'agent_job_exported',
   'agent_results_imported',
   'scan_ran',
+  'finding_status_changed',
+  'settings_updated',
   'vault_exported',
   'vault_imported'
 ] as const;
