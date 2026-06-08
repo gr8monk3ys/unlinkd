@@ -22,10 +22,18 @@ function normalizeHeader(value: string): string {
 
 function findColumn(headers: string[], variants: string[]): number {
   const normalized = headers.map(normalizeHeader);
+  // Prefer an exact header match (so e.g. the variant "name" does not bind to a
+  // "username" column) before falling back to substring matches.
   for (const variant of variants) {
-    const index = normalized.findIndex((header) => header === variant || header.includes(variant));
-    if (index !== -1) {
-      return index;
+    const exact = normalized.indexOf(variant);
+    if (exact !== -1) {
+      return exact;
+    }
+  }
+  for (const variant of variants) {
+    const partial = normalized.findIndex((header) => header.includes(variant));
+    if (partial !== -1) {
+      return partial;
     }
   }
   return -1;
@@ -88,6 +96,150 @@ function dedupe(rows: ImportedAccountRow[]): ImportedAccountRow[] {
   return [...merged.values()].sort((a, b) => a.service.localeCompare(b.service) || a.username.localeCompare(b.username));
 }
 
+type ColumnKey = 'service' | 'username' | 'url' | 'status' | 'lastSeenAt';
+
+interface FormatSpec {
+  format: ParseAccountsResult['format'];
+  columns: Partial<Record<ColumnKey, string[]>>;
+  /** Columns that must resolve, or parsing returns `requiredError`. */
+  required: ColumnKey[];
+  requiredError: string;
+  source: string;
+  /** Bitwarden: only rows whose `type` column is empty or "login" are kept. */
+  loginTypeFilter?: string[];
+  /** LastPass/Chrome: when the service column is empty, fall back to the URL. */
+  serviceFallbackToUrl?: boolean;
+  parseStatus?: boolean;
+  parseLastSeen?: boolean;
+}
+
+const FORMAT_SPECS: Record<ParseAccountsResult['format'], FormatSpec> = {
+  bitwarden: {
+    format: 'bitwarden',
+    columns: {
+      service: ['name'],
+      username: ['login_username', 'login username', 'username'],
+      url: ['login_uri', 'login_uri_1', 'login uri']
+    },
+    required: ['service', 'username'],
+    requiredError: 'Bitwarden CSV must include name and login_username columns.',
+    source: 'csv:bitwarden',
+    loginTypeFilter: ['type']
+  },
+  '1password': {
+    format: '1password',
+    columns: { service: ['title'], username: ['username'], url: ['url'] },
+    required: ['service', 'username'],
+    requiredError: '1Password CSV must include title and username columns.',
+    source: 'csv:1password'
+  },
+  lastpass: {
+    format: 'lastpass',
+    columns: { service: ['name'], username: ['username'], url: ['url'] },
+    required: ['username', 'url'],
+    requiredError: 'LastPass CSV must include url and username columns.',
+    source: 'csv:lastpass',
+    serviceFallbackToUrl: true
+  },
+  chrome: {
+    format: 'chrome',
+    columns: { service: ['name'], username: ['username'], url: ['origin', 'url'] },
+    required: ['username', 'url'],
+    requiredError: 'Chrome CSV must include origin/url and username columns.',
+    source: 'csv:chrome',
+    serviceFallbackToUrl: true
+  },
+  generic: {
+    format: 'generic',
+    columns: {
+      service: ['service', 'site', 'provider', 'app', 'name'],
+      username: ['username', 'user', 'login', 'account'],
+      url: ['url', 'website', 'link', 'login_url'],
+      status: ['status', 'state'],
+      lastSeenAt: ['lastseenat', 'last_seen_at', 'last seen at', 'last_seen']
+    },
+    required: ['service', 'username'],
+    requiredError: 'CSV must include columns for service and username.',
+    source: 'csv:generic',
+    parseStatus: true,
+    parseLastSeen: true
+  }
+};
+
+function field(fields: string[], index: number): string {
+  return index !== -1 ? (fields[index] ?? '').trim() : '';
+}
+
+type ColumnIndices = Record<ColumnKey, number> & { type: number };
+
+function resolveIndices(header: string[], spec: FormatSpec): ColumnIndices {
+  const indices = { service: -1, username: -1, url: -1, status: -1, lastSeenAt: -1, type: -1 };
+  (Object.keys(spec.columns) as ColumnKey[]).forEach((key) => {
+    indices[key] = findColumn(header, spec.columns[key]!);
+  });
+  if (spec.loginTypeFilter) {
+    indices.type = findColumn(header, spec.loginTypeFilter);
+  }
+  return indices;
+}
+
+function isLoginRow(fields: string[], indices: ColumnIndices, spec: FormatSpec): boolean {
+  if (!spec.loginTypeFilter) {
+    return true;
+  }
+  const type = indices.type !== -1 ? field(fields, indices.type).toLowerCase() : 'login';
+  return !type || type === 'login';
+}
+
+function mapRow(fields: string[], indices: ColumnIndices, spec: FormatSpec): ImportedAccountRow | null {
+  if (!isLoginRow(fields, indices, spec)) {
+    return null;
+  }
+
+  const username = field(fields, indices.username);
+  const url = field(fields, indices.url);
+  let service = field(fields, indices.service);
+  if (spec.serviceFallbackToUrl) {
+    service = service || url;
+  }
+
+  if (!username || !service) {
+    return null;
+  }
+
+  const statusRaw = spec.parseStatus ? field(fields, indices.status) : '';
+  const lastSeenRaw = spec.parseLastSeen ? field(fields, indices.lastSeenAt) : '';
+
+  return {
+    service,
+    username,
+    url: url ? url : undefined,
+    status: statusRaw ? normalizeAccountStatus(statusRaw) : 'unknown',
+    lastSeenAt: lastSeenRaw ? safeIsoDate(lastSeenRaw) : undefined,
+    source: spec.source
+  };
+}
+
+function buildRows(lines: string[], header: string[], spec: FormatSpec): ParseAccountsResult {
+  const indices = resolveIndices(header, spec);
+
+  for (const key of spec.required) {
+    if (indices[key] === -1) {
+      return { format: spec.format, rows: [], errors: [spec.requiredError] };
+    }
+  }
+
+  const rows: ImportedAccountRow[] = [];
+  for (let index = 1; index < lines.length; index += 1) {
+    const row = mapRow(parseCsvLine(lines[index]!), indices, spec);
+    if (row) {
+      rows.push(row);
+    }
+  }
+
+  return { format: spec.format, rows: dedupe(rows), errors: [] };
+}
+
 export function parseAccountsCsv(text: string): ParseAccountsResult {
   const lines = splitNonEmptyLines(text);
   if (lines.length === 0) {
@@ -96,168 +248,7 @@ export function parseAccountsCsv(text: string): ParseAccountsResult {
 
   const header = parseCsvLine(lines[0]!);
   const format = detectFormat(header);
-
-  const rows: ImportedAccountRow[] = [];
-  const errors: string[] = [];
-
-  if (format === 'bitwarden') {
-    const typeIndex = findColumn(header, ['type']);
-    const nameIndex = findColumn(header, ['name']);
-    const uriIndex = findColumn(header, ['login_uri', 'login_uri_1', 'login uri']);
-    const usernameIndex = findColumn(header, ['login_username', 'login username', 'username']);
-
-    if (nameIndex === -1 || usernameIndex === -1) {
-      return { format, rows: [], errors: ['Bitwarden CSV must include name and login_username columns.'] };
-    }
-
-    for (let index = 1; index < lines.length; index += 1) {
-      const fields = parseCsvLine(lines[index]!);
-      const type = typeIndex !== -1 ? (fields[typeIndex] ?? '').trim().toLowerCase() : 'login';
-      if (type && type !== 'login') {
-        continue;
-      }
-
-      const service = (fields[nameIndex] ?? '').trim();
-      const username = (fields[usernameIndex] ?? '').trim();
-      const url = uriIndex !== -1 ? (fields[uriIndex] ?? '').trim() : '';
-      if (!service || !username) {
-        continue;
-      }
-
-      rows.push({
-        service,
-        username,
-        url: url ? url : undefined,
-        status: 'unknown',
-        source: 'csv:bitwarden'
-      });
-    }
-
-    return { format, rows: dedupe(rows), errors };
-  }
-
-  if (format === '1password') {
-    const titleIndex = findColumn(header, ['title']);
-    const usernameIndex = findColumn(header, ['username']);
-    const urlIndex = findColumn(header, ['url']);
-    if (titleIndex === -1 || usernameIndex === -1) {
-      return { format, rows: [], errors: ['1Password CSV must include title and username columns.'] };
-    }
-
-    for (let index = 1; index < lines.length; index += 1) {
-      const fields = parseCsvLine(lines[index]!);
-      const service = (fields[titleIndex] ?? '').trim();
-      const username = (fields[usernameIndex] ?? '').trim();
-      const url = urlIndex !== -1 ? (fields[urlIndex] ?? '').trim() : '';
-      if (!service || !username) {
-        continue;
-      }
-
-      rows.push({
-        service,
-        username,
-        url: url ? url : undefined,
-        status: 'unknown',
-        source: 'csv:1password'
-      });
-    }
-
-    return { format, rows: dedupe(rows), errors };
-  }
-
-  if (format === 'lastpass') {
-    const nameIndex = findColumn(header, ['name']);
-    const usernameIndex = findColumn(header, ['username']);
-    const urlIndex = findColumn(header, ['url']);
-    if (usernameIndex === -1 || urlIndex === -1) {
-      return { format, rows: [], errors: ['LastPass CSV must include url and username columns.'] };
-    }
-
-    for (let index = 1; index < lines.length; index += 1) {
-      const fields = parseCsvLine(lines[index]!);
-      const username = (fields[usernameIndex] ?? '').trim();
-      const url = (fields[urlIndex] ?? '').trim();
-      const service = nameIndex !== -1 ? (fields[nameIndex] ?? '').trim() : '';
-      if (!username || (!service && !url)) {
-        continue;
-      }
-
-      rows.push({
-        service: service || url,
-        username,
-        url: url ? url : undefined,
-        status: 'unknown',
-        source: 'csv:lastpass'
-      });
-    }
-
-    return { format, rows: dedupe(rows), errors };
-  }
-
-  if (format === 'chrome') {
-    const nameIndex = findColumn(header, ['name']);
-    const originIndex = findColumn(header, ['origin', 'url']);
-    const usernameIndex = findColumn(header, ['username']);
-
-    if (originIndex === -1 || usernameIndex === -1) {
-      return { format, rows: [], errors: ['Chrome CSV must include origin/url and username columns.'] };
-    }
-
-    for (let index = 1; index < lines.length; index += 1) {
-      const fields = parseCsvLine(lines[index]!);
-      const username = (fields[usernameIndex] ?? '').trim();
-      const url = (fields[originIndex] ?? '').trim();
-      const service = nameIndex !== -1 ? (fields[nameIndex] ?? '').trim() : '';
-      if (!username || (!service && !url)) {
-        continue;
-      }
-
-      rows.push({
-        service: service || url,
-        username,
-        url: url ? url : undefined,
-        status: 'unknown',
-        source: 'csv:chrome'
-      });
-    }
-
-    return { format, rows: dedupe(rows), errors };
-  }
-
-  // Generic CSV (service + username required).
-  const serviceIndex = findColumn(header, ['service', 'site', 'provider', 'app', 'name']);
-  const usernameIndex = findColumn(header, ['username', 'user', 'login', 'account']);
-  const urlIndex = findColumn(header, ['url', 'website', 'link', 'login_url']);
-  const statusIndex = findColumn(header, ['status', 'state']);
-  const lastSeenAtIndex = findColumn(header, ['lastseenat', 'last_seen_at', 'last seen at', 'last_seen']);
-
-  if (serviceIndex === -1 || usernameIndex === -1) {
-    return { format, rows: [], errors: ['CSV must include columns for service and username.'] };
-  }
-
-  for (let index = 1; index < lines.length; index += 1) {
-    const fields = parseCsvLine(lines[index]!);
-    const service = (fields[serviceIndex] ?? '').trim();
-    const username = (fields[usernameIndex] ?? '').trim();
-    if (!service || !username) {
-      continue;
-    }
-
-    const url = urlIndex !== -1 ? (fields[urlIndex] ?? '').trim() : '';
-    const statusRaw = statusIndex !== -1 ? (fields[statusIndex] ?? '').trim() : '';
-    const lastSeenAtRaw = lastSeenAtIndex !== -1 ? (fields[lastSeenAtIndex] ?? '').trim() : '';
-
-    rows.push({
-      service,
-      username,
-      url: url ? url : undefined,
-      status: statusRaw ? normalizeAccountStatus(statusRaw) : 'unknown',
-      lastSeenAt: safeIsoDate(lastSeenAtRaw),
-      source: 'csv:generic'
-    });
-  }
-
-  return { format, rows: dedupe(rows), errors };
+  return buildRows(lines, header, FORMAT_SPECS[format]);
 }
 
 function extractEmails(value: string): string[] {
