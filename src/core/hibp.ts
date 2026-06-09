@@ -53,8 +53,11 @@ const breachArraySchema = z.array(breachApiSchema);
 // Constants
 // ---------------------------------------------------------------------------
 
-const HIBP_API_BASE = 'https://haveibeenpwned.com/api/v3';
-const HIBP_USER_AGENT = 'unlinkd-privacy-tool';
+// The authenticated HIBP v3 API has no CORS support, so breach lookups go
+// through a same-origin Cloudflare Pages Function proxy (see
+// functions/api/hibp/). The Pwned Passwords range API is CORS-enabled and is
+// called directly.
+const BREACH_PROXY_BASE = '/api/hibp';
 const PASSWORD_API_BASE = 'https://api.pwnedpasswords.com';
 
 // ---------------------------------------------------------------------------
@@ -74,17 +77,25 @@ export async function checkBreaches(
   }
 
   const encoded = encodeURIComponent(email);
-  const url = `${HIBP_API_BASE}/breachedaccount/${encoded}?truncateResponse=false`;
+  const url = `${BREACH_PROXY_BASE}/breachedaccount/${encoded}`;
 
   const response = await fetchWithRetry(url, {
     headers: {
       'hibp-api-key': config.apiKey,
-      'user-agent': HIBP_USER_AGENT,
     },
   });
 
-  // 404 means no breaches found — good result.
+  // 404 from HIBP (via the proxy) means no breaches found — good result. A
+  // 404 without the proxy marker means the proxy route itself is missing
+  // (e.g. plain static hosting or `vite dev`), which must not be mistaken
+  // for a clean result.
   if (response.status === 404) {
+    if (response.headers?.get?.('x-hibp-proxy') !== '1') {
+      throw new Error(
+        'HIBP proxy route not available. Breach lookup requires the Cloudflare Pages Functions deployment (or `wrangler pages dev`).',
+      );
+    }
+
     return {
       email,
       breaches: [],
@@ -141,10 +152,10 @@ export async function checkPasswordPwned(password: string): Promise<number> {
   const prefix = upperHash.slice(0, 5);
   const suffix = upperHash.slice(5);
 
+  // Note: the browser supplies its own User-Agent; this endpoint is
+  // CORS-enabled and needs no extra headers.
   const url = `${PASSWORD_API_BASE}/range/${prefix}`;
-  const response = await fetchWithRetry(url, {
-    headers: { 'user-agent': HIBP_USER_AGENT },
-  });
+  const response = await fetchWithRetry(url, {});
 
   if (!response.ok) {
     throw new Error(`Pwned Passwords API error ${response.status}`);

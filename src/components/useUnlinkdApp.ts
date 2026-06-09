@@ -50,6 +50,7 @@ import {
 import { buildMarkdownReport } from '../core/report';
 import { nowIso } from '../core/utils';
 import { discoverAccountsFromMbox, parseAccountsCsv } from '../core/import/accounts';
+import { useAutoLock } from './useAutoLock';
 import type { ConnectorCatalogMeta } from './tabs/ConnectorsTab';
 
 export type Tab =
@@ -277,6 +278,17 @@ export function useUnlinkdApp() {
       setAuditCount(0);
     });
   }
+
+  function handleLock(): void {
+    setVault(null);
+    setIsUnlocked(false);
+    setPassphrase('');
+    setError(null);
+    setAuditError(null);
+    setAuditCount(0);
+  }
+
+  useAutoLock(isUnlocked, handleLock);
 
   async function handleWipeAndRecreate(): Promise<void> {
     await withBusy(async () => {
@@ -1169,6 +1181,7 @@ export function useUnlinkdApp() {
     // handlers
     handleUnlock,
     handleCreateVault,
+    handleLock,
     handleWipeAndRecreate,
     handleAddPersona,
     handleSetActivePersona,

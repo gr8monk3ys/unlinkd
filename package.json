@@ -1,7 +1,7 @@
 {
   "name": "unlinkd",
   "version": "1.0.0",
-  "description": "A full blown OSINT tool to go through best practices for privacy.",
+  "description": "Local-first digital disappearance toolkit: encrypted vault, OSINT self-scan heuristics, and guided data-broker opt-outs.",
   "main": "index.js",
   "directories": {
     "doc": "docs"

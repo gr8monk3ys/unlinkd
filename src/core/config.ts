@@ -1,11 +1,9 @@
 export interface AppConfig {
   maxIdentifiers: number;
-  retentionDays: number;
 }
 
 const defaultConfig: AppConfig = {
-  maxIdentifiers: 250,
-  retentionDays: 90
+  maxIdentifiers: 250
 };
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
@@ -19,7 +17,6 @@ function parsePositiveInt(value: string | undefined, fallback: number): number {
 
 export function getAppConfig(): AppConfig {
   return {
-    maxIdentifiers: parsePositiveInt(import.meta.env.VITE_MAX_IDENTIFIERS, defaultConfig.maxIdentifiers),
-    retentionDays: parsePositiveInt(import.meta.env.VITE_IDENTIFIER_RETENTION_DAYS, defaultConfig.retentionDays)
+    maxIdentifiers: parsePositiveInt(import.meta.env.VITE_MAX_IDENTIFIERS, defaultConfig.maxIdentifiers)
   };
 }

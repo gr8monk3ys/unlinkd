@@ -24,7 +24,8 @@ Shipped today:
 
 - Encrypted local vault, evidence store (IndexedDB), and hash-chained audit log.
 - Passphrase-protected unlock with a create-vault flow (confirm + strength
-  meter) and an explicit "no recovery" wipe path.
+  meter), an explicit "no recovery" wipe path, a manual Lock button, and
+  auto-lock after 10 minutes of inactivity.
 - Persona management and cross-persona reuse policy warnings.
 - Identifier ingestion with validation/normalization and policy limits.
 - Heuristic local scan (consent-aware) producing prioritized risk findings.
@@ -73,7 +74,6 @@ cp .env.example .env
 ```
 
 - `VITE_MAX_IDENTIFIERS`: maximum number of identifiers that can be stored locally.
-- `VITE_IDENTIFIER_RETENTION_DAYS`: legacy identifier storage retention (not currently enforced by the vault model).
 - `VITE_CONNECTOR_FEED_URL`: connector catalog feed URL (default: `/connectors/catalog.v1.json`).
 - `VITE_CONNECTOR_FEED_PUBKEY`: base64 Ed25519 public key for verifying the feed signature.
 
@@ -96,11 +96,19 @@ npm audit --audit-level=moderate
 
 ## Deploy (Cloudflare Pages)
 
-This app is a static Vite build (`dist/`) and is suitable for Cloudflare Pages.
+This app is a static Vite build (`dist/`) plus one Cloudflare Pages Function
+(`functions/api/hibp/`) that proxies the authenticated HIBP breach API, which
+has no CORS support and therefore cannot be called from the browser directly.
+Everything except that optional breach lookup works on any static host.
 
 Notes:
 - SPA routing and security headers are configured via `public/_redirects` and `public/_headers`.
-- Set `VITE_MAX_IDENTIFIERS` / `VITE_IDENTIFIER_RETENTION_DAYS` in your Pages project build environment if you want non-default values.
+- Set `VITE_MAX_IDENTIFIERS` in your Pages project build environment if you want non-default values.
+- The HIBP breach lookup needs the Pages Functions runtime: deploy to
+  Cloudflare Pages, or test locally with `npx wrangler pages dev ./dist`.
+  Plain `npm run dev` reports the proxy as unavailable rather than silently
+  returning "no breaches". The free k-anonymity password check is CORS-enabled
+  and works everywhere.
 
 ### Recommended: Git Integration (No API Tokens)
 

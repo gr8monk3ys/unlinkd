@@ -64,6 +64,19 @@ test('runs a local scan and marks a finding mitigated', async ({ page }) => {
   await expect(page.getByTestId('stat-findings')).toHaveText('0');
 });
 
+test('locks the vault from the header button', async ({ page }) => {
+  await createVault(page);
+
+  await page.getByRole('button', { name: 'Lock' }).click();
+  await expect(page.getByRole('button', { name: 'Unlock Storage' })).toBeVisible();
+  await expect(page.getByText('Persona: Default')).not.toBeVisible();
+
+  // Re-unlocking with the same passphrase restores the session.
+  await page.getByLabel('Passphrase', { exact: true }).fill(STRONG);
+  await page.getByRole('button', { name: 'Unlock Storage' }).click();
+  await expect(page.getByText('Persona: Default')).toBeVisible();
+});
+
 test('saves the HIBP API key in Settings', async ({ page }) => {
   await createVault(page);
 

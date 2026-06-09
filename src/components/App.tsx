@@ -57,7 +57,12 @@ export function App(): React.JSX.Element {
     <main>
       <a href="#tab-content" className="skip-link">Skip to content</a>
       <h1>unlinkd</h1>
-      <p>{`Persona: ${persona.name}`}</p>
+      <p>
+        {`Persona: ${persona.name}`}{' '}
+        <button type="button" onClick={app.handleLock}>
+          Lock
+        </button>
+      </p>
       <nav role="tablist" aria-label="Main navigation" onKeyDown={handleTabKeyDown}>
         {tabItems.map((t) => (
           <button

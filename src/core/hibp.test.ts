@@ -49,10 +49,11 @@ describe('checkBreaches', () => {
     expect(result).toBeNull();
   });
 
-  it('returns empty breaches on 404 (no breaches found)', async () => {
+  it('returns empty breaches on a proxied 404 (no breaches found)', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 404,
+      headers: new Headers({ 'x-hibp-proxy': '1' }),
     });
 
     const config: HibpConfig = { apiKey: 'test-key' };
@@ -62,6 +63,20 @@ describe('checkBreaches', () => {
     expect(result!.email).toBe('safe@example.com');
     expect(result!.breaches).toEqual([]);
     expect(result!.checkedAt).toBeTruthy();
+  });
+
+  it('throws on a 404 without the proxy marker (proxy route missing)', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      headers: new Headers(),
+    });
+
+    const config: HibpConfig = { apiKey: 'test-key' };
+
+    await expect(checkBreaches('safe@example.com', config)).rejects.toThrow(
+      /proxy route not available/,
+    );
   });
 
   it('returns parsed breach data on success', async () => {
@@ -95,12 +110,11 @@ describe('checkBreaches', () => {
     expect(result!.breaches[0]!.pwnCount).toBe(152445165);
     expect(result!.breaches[0]!.dataClasses).toContain('Passwords');
 
-    // Verify the API was called with correct headers.
+    // Verify the request goes through the same-origin proxy with the key header.
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain('breachedaccount/victim%40example.com');
+    expect(url).toBe('/api/hibp/breachedaccount/victim%40example.com');
     expect((init.headers as Record<string, string>)['hibp-api-key']).toBe('test-key');
-    expect((init.headers as Record<string, string>)['user-agent']).toBe('unlinkd-privacy-tool');
   });
 
   it('throws on non-404 error responses', async () => {
@@ -144,6 +158,7 @@ describe('checkBreaches', () => {
       .mockResolvedValueOnce({
         ok: false,
         status: 404,
+        headers: new Headers({ 'x-hibp-proxy': '1' }),
       });
 
     globalThis.fetch = fetchMock;
