@@ -54,6 +54,12 @@ import {
   setHibpApiKey
 } from '../core/vaultReducer';
 import {
+  notificationPermission,
+  notificationsSupported,
+  notifyRechecksDue,
+  requestNotificationPermission
+} from './notifications';
+import {
   fetchConnectorFeed,
   loadCachedConnectorFeed,
   parseConnectorCatalogFeedV1,
@@ -144,6 +150,7 @@ export function useUnlinkdApp() {
   });
 
   const [accountsImportStatus, setAccountsImportStatus] = useState<string | null>(null);
+  const [remindersEnabled, setRemindersEnabled] = useState<boolean>(() => notificationPermission() === 'granted');
 
   const persona = vault ? activePersona(vault) : null;
   const personaIdentifiers = useMemo(() => {
@@ -262,7 +269,20 @@ export function useUnlinkdApp() {
       setIsUnlocked(true);
       setVaultPresent(true);
       await loadAuditCount(passphrase);
+
+      // Surface overdue rechecks as a desktop reminder on unlock (no-op unless
+      // the user has opted in). This is the closest a no-backend app gets to the
+      // "recheck cadence" the connector model promises.
+      notifyRechecksDue(dueConnectorInstances(loaded.connectorInstances).length);
     });
+  }
+
+  async function handleEnableReminders(): Promise<void> {
+    const granted = await requestNotificationPermission();
+    setRemindersEnabled(granted);
+    if (granted && vault) {
+      notifyRechecksDue(dueConnectorInstances(vault.connectorInstances).length);
+    }
   }
 
   async function handleCreateVault(): Promise<void> {
@@ -1156,7 +1176,10 @@ export function useUnlinkdApp() {
     manualSuggestions,
     connectorInstances,
     due,
+    remindersEnabled,
+    remindersSupported: notificationsSupported(),
     // handlers
+    handleEnableReminders,
     handleUnlock,
     handleCreateVault,
     handleWipeAndRecreate,

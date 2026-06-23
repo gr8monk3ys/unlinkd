@@ -85,6 +85,10 @@ export function App(): React.JSX.Element {
           personaIdentifiersCount={app.personaIdentifiers.length}
           personaAccountsCount={app.personaAccounts.length}
           connectorCatalog={app.connectorCatalog}
+          dueConnectors={app.due}
+          remindersSupported={app.remindersSupported}
+          remindersEnabled={app.remindersEnabled}
+          onEnableReminders={() => void app.handleEnableReminders()}
           auditCount={app.auditCount}
           auditError={app.auditError}
           onMarkRechecked={(id) => void app.handleMarkRechecked(id)}
