@@ -5,7 +5,7 @@ import { exportBackup, importBackup, wipeAllData } from '../core/backup';
 import { getAppConfig } from '../core/config';
 import { decryptBytes, encryptBytes, sha256Hex, sha256HexBytes } from '../core/crypto';
 import { deleteEvidencePayload, getEvidencePayload, putEvidencePayload } from '../core/evidence';
-import { setFindingStatus, type FindingStatus } from '../core/findings';
+import type { FindingStatus } from '../core/findings';
 import { buildExposureGraph } from '../core/graph';
 import { checkPasswordPwned, generateManualCheckSuggestions } from '../core/hibp';
 import { canAddIdentifier, findCrossPersonaDuplicate, hasDuplicateIdentifier } from '../core/policy';
@@ -21,8 +21,7 @@ import type {
   EvidenceMeta,
   Identifier,
   IdentifierType,
-  Persona,
-  RiskFinding
+  Persona
 } from '../core/types';
 import { validateIdentifierInput } from '../core/validation';
 import { canTransition } from '../core/workflow';
@@ -42,6 +41,18 @@ import {
   type ConnectorCatalogMeta
 } from '../connectors/catalog';
 import { dueConnectorInstances } from '../core/connectors';
+import {
+  addAccount,
+  addConnectorInstance,
+  addIdentifier,
+  addPersona,
+  applyConnectorTransition,
+  mergeScanFindings,
+  replaceConnectorInstance,
+  setActivePersona,
+  setFindingStatusInVault,
+  setHibpApiKey
+} from '../core/vaultReducer';
 import {
   fetchConnectorFeed,
   loadCachedConnectorFeed,
@@ -313,12 +324,7 @@ export function useUnlinkdApp() {
         createdAt: nowIso()
       };
 
-      const next: VaultStateV1 = {
-        ...vault,
-        personas: [...vault.personas, nextPersona],
-        activePersonaId: nextPersona.id
-      };
-
+      const next = addPersona(vault, nextPersona);
       setVault(next);
       await persist(next);
       await audit('persona_created', `persona:${nextPersona.id}`);
@@ -331,7 +337,7 @@ export function useUnlinkdApp() {
     }
 
     await withBusy(async () => {
-      const next: VaultStateV1 = { ...vault, activePersonaId: personaId };
+      const next = setActivePersona(vault, personaId);
       setVault(next);
       await persist(next);
     });
@@ -469,7 +475,7 @@ export function useUnlinkdApp() {
         createdAt: nowIso()
       };
 
-      const next: VaultStateV1 = { ...vault, identifiers: [...vault.identifiers, nextIdentifier] };
+      const next = addIdentifier(vault, nextIdentifier);
       setVault(next);
       await persist(next);
 
@@ -520,7 +526,7 @@ export function useUnlinkdApp() {
         createdAt: nowIso()
       };
 
-      const next: VaultStateV1 = { ...vault, accounts: [...vault.accounts, nextAccount] };
+      const next = addAccount(vault, nextAccount);
       setVault(next);
       await persist(next);
 
@@ -672,7 +678,7 @@ export function useUnlinkdApp() {
         evidence: []
       };
 
-      const next: VaultStateV1 = { ...vault, connectorInstances: [...vault.connectorInstances, instance] };
+      const next = addConnectorInstance(vault, instance);
       setVault(next);
       await persist(next);
       await audit('connector_added', `connector:${def.id}`);
@@ -761,10 +767,7 @@ export function useUnlinkdApp() {
         updatedAt: nowIso()
       };
 
-      const next: VaultStateV1 = {
-        ...vault,
-        connectorInstances: vault.connectorInstances.map((item) => (item.id === instance.id ? updated : item))
-      };
+      const next = replaceConnectorInstance(vault, updated);
 
       setVault(next);
       await persist(next);
@@ -792,11 +795,7 @@ export function useUnlinkdApp() {
       const nextCheckAt =
         to === 'recheck_scheduled' && def ? addDaysIso(def.defaultRecheckDays) : instance.nextCheckAt;
 
-      const updated: ConnectorInstance = { ...instance, state: to, nextCheckAt, updatedAt: nowIso() };
-      const next: VaultStateV1 = {
-        ...vault,
-        connectorInstances: vault.connectorInstances.map((item) => (item.id === instanceId ? updated : item))
-      };
+      const next = applyConnectorTransition(vault, instanceId, { to, nextCheckAt, updatedAt: nowIso() });
 
       setVault(next);
       await persist(next);
@@ -820,17 +819,11 @@ export function useUnlinkdApp() {
       const def = getConnectorDefinition(instance.connectorId, connectorCatalog);
       const nextCheckAt = addDaysIso(def?.defaultRecheckDays ?? 30);
 
-      const updated: ConnectorInstance = {
-        ...instance,
-        state: 'recheck_scheduled',
+      const next = applyConnectorTransition(vault, instanceId, {
+        to: 'recheck_scheduled',
         nextCheckAt,
         updatedAt: nowIso()
-      };
-
-      const next: VaultStateV1 = {
-        ...vault,
-        connectorInstances: vault.connectorInstances.map((item) => (item.id === instanceId ? updated : item))
-      };
+      });
 
       setVault(next);
       await persist(next);
@@ -1025,13 +1018,7 @@ export function useUnlinkdApp() {
       const findings = await runLocalScan(vault, {
         hibpConfig: { apiKey: vault.settings.hibpApiKey ?? null }
       });
-      const merged = new Map<string, RiskFinding>();
-      // Preserve user-set status on findings that re-appear in a rescan.
-      [...vault.findings, ...findings].forEach((finding) => {
-        const existing = merged.get(finding.id);
-        merged.set(finding.id, existing ? { ...finding, status: existing.status ?? finding.status } : finding);
-      });
-      const next: VaultStateV1 = { ...vault, findings: [...merged.values()] };
+      const next = mergeScanFindings(vault, findings);
       setVault(next);
       await persist(next);
       await audit('scan_ran', `scan:local:${findings.length}`);
@@ -1044,7 +1031,7 @@ export function useUnlinkdApp() {
     }
 
     await withBusy(async () => {
-      const next: VaultStateV1 = { ...vault, findings: setFindingStatus(vault.findings, id, status) };
+      const next = setFindingStatusInVault(vault, id, status);
       setVault(next);
       await persist(next);
       await audit('finding_status_changed', `finding:${id}:${status}`);
@@ -1057,12 +1044,10 @@ export function useUnlinkdApp() {
     }
 
     await withBusy(async () => {
-      const trimmed = key.trim();
-      const settings = { ...vault.settings, hibpApiKey: trimmed.length > 0 ? trimmed : undefined };
-      const next: VaultStateV1 = { ...vault, settings };
+      const next = setHibpApiKey(vault, key);
       setVault(next);
       await persist(next);
-      await audit('settings_updated', `settings:hibpApiKey:${trimmed.length > 0 ? 'set' : 'cleared'}`);
+      await audit('settings_updated', `settings:hibpApiKey:${key.trim().length > 0 ? 'set' : 'cleared'}`);
     });
   }
 
