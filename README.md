@@ -22,9 +22,16 @@ stored locally. There is no backend and no account.
 
 Shipped today:
 
-- Encrypted local vault, evidence store (IndexedDB), and hash-chained audit log.
+- Encrypted local vault and evidence store (IndexedDB). New data is encrypted
+  with AES-256-GCM under a key derived by **memory-hard scrypt** from your
+  passphrase (older PBKDF2 envelopes are still read for migration).
+- **HMAC-chained audit log**, keyed by a passphrase-derived key and verified
+  automatically on unlock. See *Security model* below for exactly what this does
+  and does not protect against.
 - Passphrase-protected unlock with a create-vault flow (confirm + strength
-  meter) and an explicit "no recovery" wipe path.
+  meter) and an explicit "no recovery" wipe path. Because there is no recovery,
+  **export an encrypted backup regularly** (Backup tab) — browser storage can be
+  cleared by a reinstall, OS reset, or storage eviction.
 - Persona management and cross-persona reuse policy warnings.
 - Identifier ingestion with validation/normalization and policy limits.
 - Heuristic local scan (consent-aware) producing prioritized risk findings.
@@ -34,16 +41,48 @@ Shipped today:
   manual exposure-check suggestions.
 - Signed connector catalog feed + in-app update/import, with a freshness policy.
 - Account discovery imports (password-manager CSV + mailbox discovery).
-- Encrypted backup export/import and exportable Markdown reports.
-- Optional local Playwright agent for connector automation/evidence capture.
+- Encrypted backup export/import (import is validated as ciphertext and is
+  non-destructive: a malformed or wrong-passphrase backup is rejected before any
+  existing data is touched) and exportable Markdown reports.
+- Optional local Playwright agent for **evidence capture** (see the honest
+  scope note below).
 
 Not yet built (tracked in the PRD as future work): cross-device sync, MFA
 posture scoring, recovery-factor enforcement, jurisdiction compliance profiles,
-and the self-hosted infrastructure/network stack. Connector *automation* is
-still the minority of the catalog — most connectors are guided manual
-checklists, with a small set of agent-automated evidence-capture connectors
-(navigate + screenshot of a broker listing, self-search results, or account
-security settings) run via the optional local Playwright agent.
+and the self-hosted infrastructure/network stack.
+
+**Honest scope of "connector automation":** the catalog is overwhelmingly
+*guided manual checklists*. A small number of connectors carry agent steps, and
+today those steps **only navigate to a URL and take a screenshot** — they do not
+fill forms, submit opt-outs, or change account settings. The agent captures
+*evidence*; it does not yet *perform removals*. Real opt-out automation is
+tracked as future work.
+
+## Security model
+
+Plain statement of what the local-first design does and does not protect:
+
+- **Confidentiality at rest.** All sensitive state is AES-256-GCM encrypted under
+  a key derived from your passphrase with memory-hard scrypt. If someone copies
+  your browser storage **without** your passphrase, the data is not readable; the
+  only attack is offline guessing of the passphrase, which scrypt makes costly.
+  Choose a strong passphrase — it is the single secret protecting everything.
+- **Audit-log integrity.** Records are chained with an HMAC keyed by a
+  passphrase-derived key, stored only as authenticated ciphertext, and verified
+  on unlock. An attacker who can write your browser storage but does **not** know
+  the passphrase cannot forge or alter records. Limits: anyone who knows your
+  passphrase can forge the log (unavoidable for a local-only tool with no
+  external notary), and wholesale deletion of the encrypted audit blob is not yet
+  cross-checked against the vault (tracked as future work).
+- **Connector feed authenticity.** The remote catalog must carry a valid Ed25519
+  signature (the public key is bundled at build time); the app fails closed if no
+  key is configured, and rejects feeds older than the cached version. Manually
+  *imported* connector packs are unsigned and shown as unverified — only import
+  packs you trust.
+- **Not protected against:** a device already compromised while unlocked (malware,
+  a malicious browser extension, or someone with your passphrase). XSS is
+  mitigated by a strict CSP but would be serious if it occurred. This is not a
+  tool for use on a device shared with your adversary.
 
 ## MVP Features
 
@@ -91,8 +130,13 @@ npm run lint
 npm test
 npm run build
 npm run test:e2e:ci
-npm audit --audit-level=moderate
+npm audit --omit=dev --audit-level=moderate   # production deps that actually ship
+npm audit --audit-level=moderate              # informational: includes dev-only toolchain
 ```
+
+CI gates on the production-dependency audit (what is served to users) and runs
+the full audit as informational, so a transitive advisory in the build
+toolchain (vite/playwright) does not falsely red-flag the shipped app.
 
 ## Deploy (Cloudflare Pages)
 
@@ -188,7 +232,11 @@ Appends hash-chained audit entries and verifies chain integrity.
 Applies local policy checks before ingesting new identifiers.
 
 ### `scoreFinding(finding)` / `sortFindingsByPriority(findings)`
-Scores and ranks findings using weighted harm and exploitability with a threat-tier multiplier.
+Ranks findings with a deterministic formula (weighted harm/exploitability ×
+threat-tier × status). Note: the harm/exploitability/tier inputs are currently
+**fixed constants per finding type** in the scan heuristics, not per-user risk
+modeling — the score is a stable severity ordering, not an estimate of your
+individual risk.
 
 ### `nextStates(current)` / `canTransition(from, to)`
 Provides allowed connector state transitions for deletion/remediation orchestration.

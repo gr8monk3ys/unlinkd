@@ -231,9 +231,14 @@ export function useUnlinkdApp() {
     if (!auditRecords) {
       setAuditError('Unable to unlock audit log with the provided passphrase.');
       setAuditCount(0);
-    } else {
-      setAuditCount(auditRecords.length);
+      return;
     }
+
+    setAuditCount(auditRecords.length);
+    // Passively verify integrity on unlock. Previously verification only ran on
+    // an explicit button click, so a tampered chain went unnoticed in normal use.
+    const intact = await verifyAuditChain(pass);
+    setAuditError(intact ? null : 'Audit log integrity check failed — records may have been altered.');
   }
 
   async function handleUnlock(): Promise<void> {
@@ -352,9 +357,12 @@ export function useUnlinkdApp() {
       setConnectorCatalogMeta((meta) => ({ ...meta, error: null }));
 
       try {
+        const cached = loadCachedConnectorFeed();
         const fetched = await fetchConnectorFeed({
           feedUrl: connectorFeedUrl,
-          publicKeyBase64: connectorFeedKey()
+          publicKeyBase64: connectorFeedKey(),
+          // Reject a feed older than the one we already trust (rollback/replay).
+          minGeneratedAt: cached?.feed.generatedAt ?? null
         });
 
         saveCachedConnectorFeed(fetched);
@@ -1106,7 +1114,14 @@ export function useUnlinkdApp() {
         return;
       }
 
-      await importBackup(parsed);
+      try {
+        // Pass the current passphrase so a backup that cannot be unlocked with
+        // it is rejected before the live vault is touched.
+        await importBackup(parsed, passphrase || undefined);
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : 'Backup import failed.');
+        return;
+      }
       setError(null);
 
       // Re-unlock after import.
