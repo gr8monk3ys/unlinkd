@@ -135,6 +135,18 @@ async function verifySignature(
 export async function fetchConnectorFeed(options: {
   feedUrl: string;
   publicKeyBase64: string | null;
+  /**
+   * Explicit opt-in to accept a feed when no public key is configured. Defaults
+   * to false: without a key we refuse to use the feed (fail closed) rather than
+   * silently trusting unsigned connector definitions that drive the local agent.
+   */
+  allowUnsigned?: boolean;
+  /**
+   * Rollback protection: reject a feed whose `generatedAt` is older than this
+   * (typically the currently-cached feed's `generatedAt`). Prevents a stale CDN
+   * or attacker from replaying an older, validly-signed catalog.
+   */
+  minGeneratedAt?: string | null;
 }): Promise<CachedConnectorFeedV1> {
   const response = await fetch(options.feedUrl, { cache: 'no-store' });
   if (!response.ok) {
@@ -152,6 +164,10 @@ export async function fetchConnectorFeed(options: {
   const validated = feedSchema.safeParse(parsed);
   if (!validated.success) {
     throw new Error('Connector feed failed validation.');
+  }
+
+  if (options.minGeneratedAt && validated.data.generatedAt < options.minGeneratedAt) {
+    throw new Error('Connector feed is older than the cached version (possible rollback); ignoring.');
   }
 
   let signature: string | null = null;
@@ -176,6 +192,13 @@ export async function fetchConnectorFeed(options: {
     if (!verified) {
       throw new Error('Connector feed signature verification failed.');
     }
+  } else if (!options.allowUnsigned) {
+    // Fail closed: no public key configured and unsigned feeds not explicitly
+    // allowed. Connector definitions can drive the local automation agent, so
+    // an unverified feed is refused by default.
+    throw new Error(
+      'Connector feed has no configured public key; refusing to use an unsigned feed. Configure VITE_CONNECTOR_FEED_PUBKEY.'
+    );
   }
 
   return {

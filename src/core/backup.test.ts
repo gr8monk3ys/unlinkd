@@ -152,21 +152,23 @@ describe('backup', () => {
     });
 
     it('restores evidence payloads', async () => {
+      const payload1 = { version: 1, kdf: 'pbkdf2-sha256', iterations: 310000, salt: 'a', iv: 'b', ciphertext: 'c' };
+      const payload2 = { salt: 'd', iv: 'e', ciphertext: 'f' };
       const backup = {
         version: 1,
         exportedAt: new Date().toISOString(),
         vaultCiphertext: null,
         auditCiphertext: null,
         evidence: [
-          { id: 'ev-1', payload: { encrypted: 'payload1' } },
-          { id: 'ev-2', payload: { encrypted: 'payload2' } }
+          { id: 'ev-1', payload: payload1 },
+          { id: 'ev-2', payload: payload2 }
         ]
       };
 
       await importBackup(backup);
       expect(putEvidencePayload).toHaveBeenCalledTimes(2);
-      expect(putEvidencePayload).toHaveBeenCalledWith('ev-1', { encrypted: 'payload1' });
-      expect(putEvidencePayload).toHaveBeenCalledWith('ev-2', { encrypted: 'payload2' });
+      expect(putEvidencePayload).toHaveBeenCalledWith('ev-1', payload1);
+      expect(putEvidencePayload).toHaveBeenCalledWith('ev-2', payload2);
     });
 
     it('clears existing data before importing', async () => {
@@ -191,6 +193,58 @@ describe('backup', () => {
       // Vault and audit should be null since backup had null values
       expect(getRawVaultCiphertext()).toBeNull();
       expect(getRawAuditCiphertext()).toBeNull();
+    });
+
+    it('rejects a non-envelope vault ciphertext WITHOUT wiping existing data', async () => {
+      const liveVault = JSON.stringify({ version: 1, kdf: 'pbkdf2-sha256', iterations: 310000, salt: 'x', iv: 'y', ciphertext: 'z' });
+      setRawVaultCiphertext(liveVault);
+
+      const hostileBackup = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        vaultCiphertext: JSON.stringify({ not: 'an envelope' }),
+        auditCiphertext: null,
+        evidence: []
+      };
+
+      await expect(importBackup(hostileBackup)).rejects.toThrow('not an encrypted envelope');
+      // Critical safety property: the live vault must survive a bad import.
+      expect(getRawVaultCiphertext()).toBe(liveVault);
+      expect(clearEvidenceStore).not.toHaveBeenCalled();
+    });
+
+    it('rejects an evidence payload that is not an encrypted envelope', async () => {
+      const liveVault = JSON.stringify({ version: 1, kdf: 'pbkdf2-sha256', iterations: 310000, salt: 'x', iv: 'y', ciphertext: 'z' });
+      setRawVaultCiphertext(liveVault);
+
+      const backup = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        vaultCiphertext: null,
+        auditCiphertext: null,
+        evidence: [{ id: 'ev-1', payload: { plaintext: 'oops' } }]
+      };
+
+      await expect(importBackup(backup)).rejects.toThrow('encrypted envelope');
+      expect(getRawVaultCiphertext()).toBe(liveVault);
+    });
+
+    it('aborts when the backup cannot be unlocked with the current passphrase', async () => {
+      const { encryptJson } = await import('./crypto');
+      const liveVault = JSON.stringify({ version: 1, kdf: 'pbkdf2-sha256', iterations: 310000, salt: 'x', iv: 'y', ciphertext: 'z' });
+      setRawVaultCiphertext(liveVault);
+
+      const foreignVault = JSON.stringify(await encryptJson({ version: 1 }, 'a-different-passphrase'));
+      const backup = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        vaultCiphertext: foreignVault,
+        auditCiphertext: null,
+        evidence: []
+      };
+
+      await expect(importBackup(backup, 'my-passphrase')).rejects.toThrow('cannot be unlocked');
+      expect(getRawVaultCiphertext()).toBe(liveVault);
     });
   });
 
