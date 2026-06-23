@@ -84,10 +84,6 @@ export function App(): React.JSX.Element {
         <DashboardTab
           personaIdentifiersCount={app.personaIdentifiers.length}
           personaAccountsCount={app.personaAccounts.length}
-          graphNodes={app.exposureGraph.nodes.length}
-          graphEdges={app.exposureGraph.edges.length}
-          connectorInstancesCount={app.connectorInstances.length}
-          dueConnectors={app.due}
           connectorCatalog={app.connectorCatalog}
           auditCount={app.auditCount}
           auditError={app.auditError}

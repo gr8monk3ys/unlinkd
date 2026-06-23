@@ -9,21 +9,14 @@ import { ExposureGraph } from '../ExposureGraph';
 import { ProgressOverview } from '../ProgressOverview';
 
 export interface DashboardTabProps {
-  /* Existing props (backward compatible) */
   personaIdentifiersCount: number;
   personaAccountsCount: number;
-  graphNodes: number;
-  graphEdges: number;
-  connectorInstancesCount: number;
-  dueConnectors: ConnectorInstance[];
   connectorCatalog: ConnectorDefinition[];
   auditCount: number;
   auditError: string | null;
   onMarkRechecked: (instanceId: string) => void;
   onRunLocalScan: () => void;
   onVerifyAudit: () => void;
-
-  /* New optional props for visual components */
   exposureNodes?: ExposureNode[];
   exposureEdges?: ExposureEdge[];
   connectorInstances?: ConnectorInstance[];

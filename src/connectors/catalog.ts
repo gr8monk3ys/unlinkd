@@ -2,6 +2,16 @@ import type { ConnectorDefinition } from '../core/types';
 
 export const builtinConnectorCatalogVersion = 'builtin-2026-02-14';
 
+/** Provenance/verification metadata for the active connector catalog. */
+export interface ConnectorCatalogMeta {
+  source: 'builtin' | 'cache' | 'remote' | 'import';
+  catalogVersion: string;
+  generatedAt: string | null;
+  verified: boolean | null;
+  updatedAt: string | null;
+  error: string | null;
+}
+
 // Small builtin fallback so the app still works if the connector feed can't be loaded.
 export const builtinConnectorCatalog: ConnectorDefinition[] = [
   {

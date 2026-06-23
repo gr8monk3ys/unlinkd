@@ -7,17 +7,11 @@ import type {
   EvidenceKind,
   EvidenceMeta
 } from '../../core/types';
-import { getConnectorDefinition } from '../../connectors/catalog';
+import { getConnectorDefinition, type ConnectorCatalogMeta } from '../../connectors/catalog';
+import { connectorName } from '../../core/connectors';
 import { nextStates } from '../../core/workflow';
 
-export interface ConnectorCatalogMeta {
-  source: 'builtin' | 'cache' | 'remote' | 'import';
-  catalogVersion: string;
-  generatedAt: string | null;
-  verified: boolean | null;
-  updatedAt: string | null;
-  error: string | null;
-}
+export type { ConnectorCatalogMeta };
 
 interface ConnectorsTabProps {
   connectorCatalog: ConnectorDefinition[];
@@ -64,10 +58,6 @@ const STATE_ORDER: ConnectorState[] = [
   'proof_captured',
   'recheck_scheduled'
 ];
-
-function connectorName(connectorId: string, catalog: ConnectorDefinition[]): string {
-  return catalog.find((c) => c.id === connectorId)?.name ?? connectorId;
-}
 
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;

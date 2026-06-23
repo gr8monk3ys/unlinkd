@@ -38,8 +38,10 @@ import {
   builtinConnectorCatalog,
   builtinConnectorCatalogVersion,
   getConnectorDefinition,
-  mergeConnectorCatalogs
+  mergeConnectorCatalogs,
+  type ConnectorCatalogMeta
 } from '../connectors/catalog';
+import { dueConnectorInstances } from '../core/connectors';
 import {
   fetchConnectorFeed,
   loadCachedConnectorFeed,
@@ -50,7 +52,6 @@ import {
 import { buildMarkdownReport } from '../core/report';
 import { nowIso } from '../core/utils';
 import { discoverAccountsFromMbox, parseAccountsCsv } from '../core/import/accounts';
-import type { ConnectorCatalogMeta } from './tabs/ConnectorsTab';
 
 export type Tab =
   | 'dashboard'
@@ -107,17 +108,6 @@ function activePersona(vault: VaultStateV1): Persona {
   return vault.personas.find((persona) => persona.id === vault.activePersonaId) ?? vault.personas[0]!;
 }
 
-function dueConnectors(instances: ConnectorInstance[]): ConnectorInstance[] {
-  const now = Date.now();
-  return instances.filter((instance) => {
-    if (!instance.nextCheckAt) {
-      return false;
-    }
-
-    const ts = Date.parse(instance.nextCheckAt);
-    return Number.isFinite(ts) && ts <= now;
-  });
-}
 
 export function useUnlinkdApp() {
   const busyRef = useRef(false);
@@ -1155,7 +1145,7 @@ export function useUnlinkdApp() {
   const connectorInstances = vault && persona
     ? vault.connectorInstances.filter((item) => item.personaId === persona.id)
     : [];
-  const due = dueConnectors(connectorInstances);
+  const due = dueConnectorInstances(connectorInstances);
 
   return {
     // state
