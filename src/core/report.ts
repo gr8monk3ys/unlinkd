@@ -1,5 +1,6 @@
 import type { ConnectorDefinition, ConnectorInstance, Persona } from './types';
 import type { VaultStateV1 } from './vault';
+import { connectorName, dueConnectorInstances } from './connectors';
 import { scoreFinding, sortFindingsByPriority } from './scoring';
 
 export interface ReportOptions {
@@ -19,29 +20,14 @@ function byState(instances: ConnectorInstance[]): Record<string, number> {
   }, {});
 }
 
-function connectorName(connectorId: string, catalog: ConnectorDefinition[]): string {
-  return catalog.find((item) => item.id === connectorId)?.name ?? connectorId;
-}
-
 function personaName(personaId: string, personas: Persona[]): string {
   return personas.find((persona) => persona.id === personaId)?.name ?? personaId;
-}
-
-function dueInstances(instances: ConnectorInstance[], now = Date.now()): ConnectorInstance[] {
-  return instances.filter((instance) => {
-    if (!instance.nextCheckAt) {
-      return false;
-    }
-
-    const ts = Date.parse(instance.nextCheckAt);
-    return Number.isFinite(ts) && ts <= now;
-  });
 }
 
 export function buildMarkdownReport(vault: VaultStateV1, options: ReportOptions): string {
   const now = new Date().toISOString();
   const instancesByState = byState(vault.connectorInstances);
-  const due = dueInstances(vault.connectorInstances);
+  const due = dueConnectorInstances(vault.connectorInstances);
   const findings = sortFindingsByPriority(vault.findings);
 
   const lines: string[] = [];

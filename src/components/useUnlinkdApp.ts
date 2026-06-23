@@ -5,7 +5,7 @@ import { exportBackup, importBackup, wipeAllData } from '../core/backup';
 import { getAppConfig } from '../core/config';
 import { decryptBytes, encryptBytes, sha256Hex, sha256HexBytes } from '../core/crypto';
 import { deleteEvidencePayload, getEvidencePayload, putEvidencePayload } from '../core/evidence';
-import { setFindingStatus, type FindingStatus } from '../core/findings';
+import type { FindingStatus } from '../core/findings';
 import { buildExposureGraph } from '../core/graph';
 import { checkPasswordPwned, generateManualCheckSuggestions } from '../core/hibp';
 import { canAddIdentifier, findCrossPersonaDuplicate, hasDuplicateIdentifier } from '../core/policy';
@@ -21,8 +21,7 @@ import type {
   EvidenceMeta,
   Identifier,
   IdentifierType,
-  Persona,
-  RiskFinding
+  Persona
 } from '../core/types';
 import { validateIdentifierInput } from '../core/validation';
 import { canTransition } from '../core/workflow';
@@ -38,8 +37,28 @@ import {
   builtinConnectorCatalog,
   builtinConnectorCatalogVersion,
   getConnectorDefinition,
-  mergeConnectorCatalogs
+  mergeConnectorCatalogs,
+  type ConnectorCatalogMeta
 } from '../connectors/catalog';
+import { dueConnectorInstances } from '../core/connectors';
+import {
+  addAccount,
+  addConnectorInstance,
+  addIdentifier,
+  addPersona,
+  applyConnectorTransition,
+  mergeScanFindings,
+  replaceConnectorInstance,
+  setActivePersona,
+  setFindingStatusInVault,
+  setHibpApiKey
+} from '../core/vaultReducer';
+import {
+  notificationPermission,
+  notificationsSupported,
+  notifyRechecksDue,
+  requestNotificationPermission
+} from './notifications';
 import {
   fetchConnectorFeed,
   loadCachedConnectorFeed,
@@ -50,7 +69,6 @@ import {
 import { buildMarkdownReport } from '../core/report';
 import { nowIso } from '../core/utils';
 import { discoverAccountsFromMbox, parseAccountsCsv } from '../core/import/accounts';
-import type { ConnectorCatalogMeta } from './tabs/ConnectorsTab';
 
 export type Tab =
   | 'dashboard'
@@ -107,17 +125,6 @@ function activePersona(vault: VaultStateV1): Persona {
   return vault.personas.find((persona) => persona.id === vault.activePersonaId) ?? vault.personas[0]!;
 }
 
-function dueConnectors(instances: ConnectorInstance[]): ConnectorInstance[] {
-  const now = Date.now();
-  return instances.filter((instance) => {
-    if (!instance.nextCheckAt) {
-      return false;
-    }
-
-    const ts = Date.parse(instance.nextCheckAt);
-    return Number.isFinite(ts) && ts <= now;
-  });
-}
 
 export function useUnlinkdApp() {
   const busyRef = useRef(false);
@@ -143,6 +150,7 @@ export function useUnlinkdApp() {
   });
 
   const [accountsImportStatus, setAccountsImportStatus] = useState<string | null>(null);
+  const [remindersEnabled, setRemindersEnabled] = useState<boolean>(() => notificationPermission() === 'granted');
 
   const persona = vault ? activePersona(vault) : null;
   const personaIdentifiers = useMemo(() => {
@@ -231,9 +239,14 @@ export function useUnlinkdApp() {
     if (!auditRecords) {
       setAuditError('Unable to unlock audit log with the provided passphrase.');
       setAuditCount(0);
-    } else {
-      setAuditCount(auditRecords.length);
+      return;
     }
+
+    setAuditCount(auditRecords.length);
+    // Passively verify integrity on unlock. Previously verification only ran on
+    // an explicit button click, so a tampered chain went unnoticed in normal use.
+    const intact = await verifyAuditChain(pass);
+    setAuditError(intact ? null : 'Audit log integrity check failed — records may have been altered.');
   }
 
   async function handleUnlock(): Promise<void> {
@@ -256,7 +269,20 @@ export function useUnlinkdApp() {
       setIsUnlocked(true);
       setVaultPresent(true);
       await loadAuditCount(passphrase);
+
+      // Surface overdue rechecks as a desktop reminder on unlock (no-op unless
+      // the user has opted in). This is the closest a no-backend app gets to the
+      // "recheck cadence" the connector model promises.
+      notifyRechecksDue(dueConnectorInstances(loaded.connectorInstances).length);
     });
+  }
+
+  async function handleEnableReminders(): Promise<void> {
+    const granted = await requestNotificationPermission();
+    setRemindersEnabled(granted);
+    if (granted && vault) {
+      notifyRechecksDue(dueConnectorInstances(vault.connectorInstances).length);
+    }
   }
 
   async function handleCreateVault(): Promise<void> {
@@ -318,12 +344,7 @@ export function useUnlinkdApp() {
         createdAt: nowIso()
       };
 
-      const next: VaultStateV1 = {
-        ...vault,
-        personas: [...vault.personas, nextPersona],
-        activePersonaId: nextPersona.id
-      };
-
+      const next = addPersona(vault, nextPersona);
       setVault(next);
       await persist(next);
       await audit('persona_created', `persona:${nextPersona.id}`);
@@ -336,7 +357,7 @@ export function useUnlinkdApp() {
     }
 
     await withBusy(async () => {
-      const next: VaultStateV1 = { ...vault, activePersonaId: personaId };
+      const next = setActivePersona(vault, personaId);
       setVault(next);
       await persist(next);
     });
@@ -352,9 +373,12 @@ export function useUnlinkdApp() {
       setConnectorCatalogMeta((meta) => ({ ...meta, error: null }));
 
       try {
+        const cached = loadCachedConnectorFeed();
         const fetched = await fetchConnectorFeed({
           feedUrl: connectorFeedUrl,
-          publicKeyBase64: connectorFeedKey()
+          publicKeyBase64: connectorFeedKey(),
+          // Reject a feed older than the one we already trust (rollback/replay).
+          minGeneratedAt: cached?.feed.generatedAt ?? null
         });
 
         saveCachedConnectorFeed(fetched);
@@ -471,7 +495,7 @@ export function useUnlinkdApp() {
         createdAt: nowIso()
       };
 
-      const next: VaultStateV1 = { ...vault, identifiers: [...vault.identifiers, nextIdentifier] };
+      const next = addIdentifier(vault, nextIdentifier);
       setVault(next);
       await persist(next);
 
@@ -522,7 +546,7 @@ export function useUnlinkdApp() {
         createdAt: nowIso()
       };
 
-      const next: VaultStateV1 = { ...vault, accounts: [...vault.accounts, nextAccount] };
+      const next = addAccount(vault, nextAccount);
       setVault(next);
       await persist(next);
 
@@ -674,7 +698,7 @@ export function useUnlinkdApp() {
         evidence: []
       };
 
-      const next: VaultStateV1 = { ...vault, connectorInstances: [...vault.connectorInstances, instance] };
+      const next = addConnectorInstance(vault, instance);
       setVault(next);
       await persist(next);
       await audit('connector_added', `connector:${def.id}`);
@@ -763,10 +787,7 @@ export function useUnlinkdApp() {
         updatedAt: nowIso()
       };
 
-      const next: VaultStateV1 = {
-        ...vault,
-        connectorInstances: vault.connectorInstances.map((item) => (item.id === instance.id ? updated : item))
-      };
+      const next = replaceConnectorInstance(vault, updated);
 
       setVault(next);
       await persist(next);
@@ -794,11 +815,7 @@ export function useUnlinkdApp() {
       const nextCheckAt =
         to === 'recheck_scheduled' && def ? addDaysIso(def.defaultRecheckDays) : instance.nextCheckAt;
 
-      const updated: ConnectorInstance = { ...instance, state: to, nextCheckAt, updatedAt: nowIso() };
-      const next: VaultStateV1 = {
-        ...vault,
-        connectorInstances: vault.connectorInstances.map((item) => (item.id === instanceId ? updated : item))
-      };
+      const next = applyConnectorTransition(vault, instanceId, { to, nextCheckAt, updatedAt: nowIso() });
 
       setVault(next);
       await persist(next);
@@ -822,17 +839,11 @@ export function useUnlinkdApp() {
       const def = getConnectorDefinition(instance.connectorId, connectorCatalog);
       const nextCheckAt = addDaysIso(def?.defaultRecheckDays ?? 30);
 
-      const updated: ConnectorInstance = {
-        ...instance,
-        state: 'recheck_scheduled',
+      const next = applyConnectorTransition(vault, instanceId, {
+        to: 'recheck_scheduled',
         nextCheckAt,
         updatedAt: nowIso()
-      };
-
-      const next: VaultStateV1 = {
-        ...vault,
-        connectorInstances: vault.connectorInstances.map((item) => (item.id === instanceId ? updated : item))
-      };
+      });
 
       setVault(next);
       await persist(next);
@@ -1027,13 +1038,7 @@ export function useUnlinkdApp() {
       const findings = await runLocalScan(vault, {
         hibpConfig: { apiKey: vault.settings.hibpApiKey ?? null }
       });
-      const merged = new Map<string, RiskFinding>();
-      // Preserve user-set status on findings that re-appear in a rescan.
-      [...vault.findings, ...findings].forEach((finding) => {
-        const existing = merged.get(finding.id);
-        merged.set(finding.id, existing ? { ...finding, status: existing.status ?? finding.status } : finding);
-      });
-      const next: VaultStateV1 = { ...vault, findings: [...merged.values()] };
+      const next = mergeScanFindings(vault, findings);
       setVault(next);
       await persist(next);
       await audit('scan_ran', `scan:local:${findings.length}`);
@@ -1046,7 +1051,7 @@ export function useUnlinkdApp() {
     }
 
     await withBusy(async () => {
-      const next: VaultStateV1 = { ...vault, findings: setFindingStatus(vault.findings, id, status) };
+      const next = setFindingStatusInVault(vault, id, status);
       setVault(next);
       await persist(next);
       await audit('finding_status_changed', `finding:${id}:${status}`);
@@ -1059,12 +1064,10 @@ export function useUnlinkdApp() {
     }
 
     await withBusy(async () => {
-      const trimmed = key.trim();
-      const settings = { ...vault.settings, hibpApiKey: trimmed.length > 0 ? trimmed : undefined };
-      const next: VaultStateV1 = { ...vault, settings };
+      const next = setHibpApiKey(vault, key);
       setVault(next);
       await persist(next);
-      await audit('settings_updated', `settings:hibpApiKey:${trimmed.length > 0 ? 'set' : 'cleared'}`);
+      await audit('settings_updated', `settings:hibpApiKey:${key.trim().length > 0 ? 'set' : 'cleared'}`);
     });
   }
 
@@ -1106,7 +1109,14 @@ export function useUnlinkdApp() {
         return;
       }
 
-      await importBackup(parsed);
+      try {
+        // Pass the current passphrase so a backup that cannot be unlocked with
+        // it is rejected before the live vault is touched.
+        await importBackup(parsed, passphrase || undefined);
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : 'Backup import failed.');
+        return;
+      }
       setError(null);
 
       // Re-unlock after import.
@@ -1140,7 +1150,7 @@ export function useUnlinkdApp() {
   const connectorInstances = vault && persona
     ? vault.connectorInstances.filter((item) => item.personaId === persona.id)
     : [];
-  const due = dueConnectors(connectorInstances);
+  const due = dueConnectorInstances(connectorInstances);
 
   return {
     // state
@@ -1166,7 +1176,10 @@ export function useUnlinkdApp() {
     manualSuggestions,
     connectorInstances,
     due,
+    remindersEnabled,
+    remindersSupported: notificationsSupported(),
     // handlers
+    handleEnableReminders,
     handleUnlock,
     handleCreateVault,
     handleWipeAndRecreate,

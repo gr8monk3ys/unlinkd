@@ -1,8 +1,36 @@
+import { scryptAsync } from '@noble/hashes/scrypt.js';
+import { fromBase64, isRecord } from './utils';
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-const DEFAULT_PBKDF2_ITERATIONS = 310_000;
+// PBKDF2 derivation is retained only to read pre-existing v1 envelopes; the
+// per-envelope iteration count is taken from the stored payload. New data is
+// written with memory-hard scrypt (see below).
 const BASE64_CHUNK_SIZE = 0x8000;
+
+export interface ScryptParams {
+  /** CPU/memory cost; must be a power of two. */
+  N: number;
+  /** Block size. */
+  r: number;
+  /** Parallelization. */
+  p: number;
+}
+
+// Memory-hard default for new envelopes. N=2^15 with r=8 uses ~32 MiB, which is
+// GPU/ASIC-resistant in a way PBKDF2 is not, while staying responsive in-browser.
+export const DEFAULT_SCRYPT_PARAMS: Readonly<ScryptParams> = { N: 2 ** 15, r: 8, p: 1 };
+
+let activeScryptParams: ScryptParams = { ...DEFAULT_SCRYPT_PARAMS };
+
+/**
+ * Test-only seam: lowers the scrypt work factor so the suite stays fast. Never
+ * call this in production code — it weakens key derivation by design.
+ */
+export function setScryptParamsForTesting(params: ScryptParams): void {
+  activeScryptParams = { ...params };
+}
 
 function asBufferSource(value: Uint8Array): BufferSource {
   return value as unknown as BufferSource;
@@ -13,6 +41,20 @@ function concatBytes(a: Uint8Array, b: Uint8Array): Uint8Array {
   merged.set(a, 0);
   merged.set(b, a.length);
   return merged;
+}
+
+async function deriveAesKeyScrypt(passphrase: string, salt: Uint8Array, params: ScryptParams): Promise<CryptoKey> {
+  const keyBytes = await scryptAsync(encoder.encode(passphrase), salt, {
+    N: params.N,
+    r: params.r,
+    p: params.p,
+    dkLen: 32
+  });
+
+  return crypto.subtle.importKey('raw', asBufferSource(keyBytes), { name: 'AES-GCM', length: 256 }, false, [
+    'encrypt',
+    'decrypt'
+  ]);
 }
 
 async function deriveAesKeyPbkdf2(passphrase: string, salt: Uint8Array, iterations: number): Promise<CryptoKey> {
@@ -48,9 +90,6 @@ function toBase64(value: Uint8Array): string {
   return btoa(binary);
 }
 
-import { fromBase64, isRecord } from './utils';
-
-
 interface EncryptedPayloadLegacy {
   salt: string;
   iv: string;
@@ -66,7 +105,22 @@ export interface EncryptedPayloadV1 {
   ciphertext: string;
 }
 
-export type EncryptedPayload = EncryptedPayloadLegacy | EncryptedPayloadV1;
+export interface EncryptedPayloadV2 {
+  version: 2;
+  kdf: 'scrypt';
+  n: number;
+  r: number;
+  p: number;
+  salt: string;
+  iv: string;
+  ciphertext: string;
+}
+
+export type EncryptedPayload = EncryptedPayloadLegacy | EncryptedPayloadV1 | EncryptedPayloadV2;
+
+function isPositiveInt(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0;
+}
 
 function parseEncryptedPayload(value: unknown): EncryptedPayload | null {
   if (!isRecord(value)) {
@@ -78,6 +132,14 @@ function parseEncryptedPayload(value: unknown): EncryptedPayload | null {
   const ciphertext = typeof value.ciphertext === 'string' ? value.ciphertext : null;
   if (!salt || !iv || !ciphertext) {
     return null;
+  }
+
+  if (value.version === 2) {
+    if (value.kdf !== 'scrypt' || !isPositiveInt(value.n) || !isPositiveInt(value.r) || !isPositiveInt(value.p)) {
+      return null;
+    }
+
+    return { version: 2, kdf: 'scrypt', n: value.n, r: value.r, p: value.p, salt, iv, ciphertext };
   }
 
   if (value.version === 1) {
@@ -100,67 +162,92 @@ function parseEncryptedPayload(value: unknown): EncryptedPayload | null {
   return { salt, iv, ciphertext };
 }
 
-export async function encryptJson(payload: unknown, passphrase: string): Promise<EncryptedPayloadV1> {
+/**
+ * Returns true if `value` has the shape of one of our encrypted envelopes.
+ * Used by backup import to reject non-ciphertext blobs before persisting them.
+ */
+export function isEncryptedPayload(value: unknown): boolean {
+  return parseEncryptedPayload(value) !== null;
+}
+
+async function deriveKeyForPayload(payload: EncryptedPayload, passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
+  if ('version' in payload && payload.version === 2) {
+    return deriveAesKeyScrypt(passphrase, salt, { N: payload.n, r: payload.r, p: payload.p });
+  }
+  if ('version' in payload && payload.version === 1) {
+    return deriveAesKeyPbkdf2(passphrase, salt, payload.iterations);
+  }
+  return deriveAesKeyLegacy(passphrase, salt);
+}
+
+async function encryptRaw(data: Uint8Array, passphrase: string): Promise<EncryptedPayloadV2> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const iterations = DEFAULT_PBKDF2_ITERATIONS;
-  const key = await deriveAesKeyPbkdf2(passphrase, salt, iterations);
+  const params = activeScryptParams;
+  const key = await deriveAesKeyScrypt(passphrase, salt, params);
   const ciphertext = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv: asBufferSource(iv), tagLength: 128 },
     key,
-    asBufferSource(encoder.encode(JSON.stringify(payload)))
+    asBufferSource(data)
   );
 
   return {
-    version: 1,
-    kdf: 'pbkdf2-sha256',
-    iterations,
+    version: 2,
+    kdf: 'scrypt',
+    n: params.N,
+    r: params.r,
+    p: params.p,
     salt: toBase64(salt),
     iv: toBase64(iv),
     ciphertext: toBase64(new Uint8Array(ciphertext))
   };
 }
 
+export async function encryptJson(payload: unknown, passphrase: string): Promise<EncryptedPayloadV2> {
+  return encryptRaw(encoder.encode(JSON.stringify(payload)), passphrase);
+}
+
+export async function encryptBytes(payload: Uint8Array, passphrase: string): Promise<EncryptedPayloadV2> {
+  return encryptRaw(payload, passphrase);
+}
+
+async function decryptRaw(payload: unknown, passphrase: string): Promise<Uint8Array | null> {
+  const parsed = parseEncryptedPayload(payload);
+  if (!parsed) {
+    return null;
+  }
+
+  const salt = fromBase64(parsed.salt);
+  const iv = fromBase64(parsed.iv);
+  const data = fromBase64(parsed.ciphertext);
+  const key = await deriveKeyForPayload(parsed, passphrase, salt);
+  const plaintext = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: asBufferSource(iv), tagLength: 128 },
+    key,
+    asBufferSource(data)
+  );
+  return new Uint8Array(plaintext);
+}
+
 export async function decryptJson(payload: unknown, passphrase: string): Promise<unknown | null> {
   try {
-    const parsed = parseEncryptedPayload(payload);
-    if (!parsed) {
+    const plaintext = await decryptRaw(payload, passphrase);
+    if (!plaintext) {
       return null;
     }
-
-    const salt = fromBase64(parsed.salt);
-    const iv = fromBase64(parsed.iv);
-    const data = fromBase64(parsed.ciphertext);
-    const key =
-      'version' in parsed
-        ? await deriveAesKeyPbkdf2(passphrase, salt, parsed.iterations)
-        : await deriveAesKeyLegacy(passphrase, salt);
-    const plaintext = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: asBufferSource(iv), tagLength: 128 },
-      key,
-      asBufferSource(data)
-    );
     return JSON.parse(decoder.decode(plaintext));
   } catch {
     return null;
   }
 }
 
-export async function encryptBytes(payload: Uint8Array, passphrase: string): Promise<EncryptedPayloadV1> {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const iterations = DEFAULT_PBKDF2_ITERATIONS;
-  const key = await deriveAesKeyPbkdf2(passphrase, salt, iterations);
-  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: asBufferSource(iv), tagLength: 128 }, key, asBufferSource(payload));
-
-  return {
-    version: 1,
-    kdf: 'pbkdf2-sha256',
-    iterations,
-    salt: toBase64(salt),
-    iv: toBase64(iv),
-    ciphertext: toBase64(new Uint8Array(ciphertext))
-  };
+export async function decryptBytes(payload: unknown, passphrase: string): Promise<Uint8Array<ArrayBuffer> | null> {
+  try {
+    const plaintext = await decryptRaw(payload, passphrase);
+    return plaintext ? (new Uint8Array(plaintext) as Uint8Array<ArrayBuffer>) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function sha256Hex(value: string): Promise<string> {
@@ -188,29 +275,4 @@ export async function sha256HexBytes(value: Uint8Array): Promise<string> {
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
-}
-
-export async function decryptBytes(payload: unknown, passphrase: string): Promise<Uint8Array<ArrayBuffer> | null> {
-  try {
-    const parsed = parseEncryptedPayload(payload);
-    if (!parsed) {
-      return null;
-    }
-
-    const salt = fromBase64(parsed.salt);
-    const iv = fromBase64(parsed.iv);
-    const data = fromBase64(parsed.ciphertext);
-    const key =
-      'version' in parsed
-        ? await deriveAesKeyPbkdf2(passphrase, salt, parsed.iterations)
-        : await deriveAesKeyLegacy(passphrase, salt);
-    const plaintext = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: asBufferSource(iv), tagLength: 128 },
-      key,
-      asBufferSource(data)
-    );
-    return new Uint8Array(plaintext);
-  } catch {
-    return null;
-  }
 }

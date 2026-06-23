@@ -1,4 +1,7 @@
-import { decryptJson, encryptJson, sha256Hex } from './crypto';
+import { hkdf } from '@noble/hashes/hkdf.js';
+import { hmac } from '@noble/hashes/hmac.js';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { decryptJson, encryptJson } from './crypto';
 import { isRecord } from './utils';
 
 export const auditActions = [
@@ -34,10 +37,39 @@ export interface AuditRecord {
 }
 
 const auditStorageKey = 'unlinkd.audit.v1';
+const encoder = new TextEncoder();
+
+// Domain-separated salt/info for the audit MAC key. The key is derived from the
+// vault passphrase, so an attacker who can write local storage but does NOT know
+// the passphrase cannot recompute a valid chain (the old unkeyed SHA-256 chain
+// could be rewritten by anyone). A holder of the passphrase can still forge it —
+// that is unavoidable for a purely local tool with no external notary.
+const AUDIT_MAC_SALT = encoder.encode('unlinkd.audit.mac.salt.v1');
+const AUDIT_MAC_INFO = encoder.encode('unlinkd.audit.hmac-chain.v1');
 
 interface AuditEnvelope {
   version: 1;
   records: AuditRecord[];
+}
+
+function deriveAuditMacKey(passphrase: string): Uint8Array {
+  return hkdf(sha256, encoder.encode(passphrase), AUDIT_MAC_SALT, AUDIT_MAC_INFO, 32);
+}
+
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function computeRecordMac(
+  macKey: Uint8Array,
+  parts: { id: string; action: string; details: string; timestamp: string; previousHash: string | null }
+): string {
+  const message = encoder.encode(
+    `${parts.id}:${parts.action}:${parts.details}:${parts.timestamp}:${parts.previousHash ?? 'root'}`
+  );
+  return toHex(hmac(sha256, macKey, message));
 }
 
 function isAuditAction(value: unknown): value is AuditAction {
@@ -91,21 +123,12 @@ async function readAuditEnvelope(passphrase: string): Promise<AuditEnvelope | nu
     return null;
   }
 
-  // Legacy storage: plaintext array of records. Migrate to encrypted on first successful unlock.
+  // The audit log is only ever persisted as an encrypted envelope. We do NOT
+  // accept a bare plaintext array: that legacy "migration" path let an attacker
+  // who can write local storage inject a fully-forged log without the
+  // passphrase. A bare array is treated as no usable log (start fresh).
   if (Array.isArray(parsed)) {
-    if (!isAuditRecordArray(parsed)) {
-      return null;
-    }
-
-    const envelope: AuditEnvelope = { version: 1, records: parsed };
-    const encrypted = await encryptJson(envelope, passphrase);
-    try {
-      localStorage.setItem(auditStorageKey, JSON.stringify(encrypted));
-    } catch {
-      // If we can't persist the migration, still allow reading in-memory.
-    }
-
-    return envelope;
+    return { version: 1, records: [] };
   }
 
   const decrypted = await decryptJson(parsed, passphrase);
@@ -145,7 +168,8 @@ export async function appendAuditRecord(
     envelope.records.length > 0 ? envelope.records[envelope.records.length - 1]?.hash ?? null : null;
   const timestamp = new Date().toISOString();
   const id = crypto.randomUUID();
-  const hash = await sha256Hex(`${id}:${action}:${details}:${timestamp}:${previousHash ?? 'root'}`);
+  const macKey = deriveAuditMacKey(passphrase);
+  const hash = computeRecordMac(macKey, { id, action, details, timestamp, previousHash });
 
   const record: AuditRecord = {
     id,
@@ -167,6 +191,8 @@ export async function verifyAuditChain(passphrase: string): Promise<boolean> {
     return false;
   }
 
+  const macKey = deriveAuditMacKey(passphrase);
+
   for (let index = 0; index < records.length; index += 1) {
     const record = records[index];
     if (!record) {
@@ -178,9 +204,13 @@ export async function verifyAuditChain(passphrase: string): Promise<boolean> {
       return false;
     }
 
-    const expectedHash = await sha256Hex(
-      `${record.id}:${record.action}:${record.details}:${record.timestamp}:${record.previousHash ?? 'root'}`
-    );
+    const expectedHash = computeRecordMac(macKey, {
+      id: record.id,
+      action: record.action,
+      details: record.details,
+      timestamp: record.timestamp,
+      previousHash: record.previousHash
+    });
 
     if (record.hash !== expectedHash) {
       return false;

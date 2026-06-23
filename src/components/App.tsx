@@ -84,11 +84,11 @@ export function App(): React.JSX.Element {
         <DashboardTab
           personaIdentifiersCount={app.personaIdentifiers.length}
           personaAccountsCount={app.personaAccounts.length}
-          graphNodes={app.exposureGraph.nodes.length}
-          graphEdges={app.exposureGraph.edges.length}
-          connectorInstancesCount={app.connectorInstances.length}
-          dueConnectors={app.due}
           connectorCatalog={app.connectorCatalog}
+          dueConnectors={app.due}
+          remindersSupported={app.remindersSupported}
+          remindersEnabled={app.remindersEnabled}
+          onEnableReminders={() => void app.handleEnableReminders()}
           auditCount={app.auditCount}
           auditError={app.auditError}
           onMarkRechecked={(id) => void app.handleMarkRechecked(id)}
