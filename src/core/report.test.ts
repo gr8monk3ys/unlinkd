@@ -14,6 +14,7 @@ function emptyVault(overrides?: Partial<VaultStateV1>): VaultStateV1 {
     connectorInstances: [],
     findings: [],
     settings: {},
+    auditChainTip: null,
     ...overrides
   };
 }

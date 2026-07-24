@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { appendAuditRecord, clearAuditCiphertext } from '../core/audit';
 import { createEmptyVault, saveVault } from '../core/vault';
 import { App } from './App';
 
@@ -98,6 +99,25 @@ describe('App unlock + create', () => {
 
     await switchToTab('Identifiers');
     expect(await screen.findByText('username: alias')).toBeInTheDocument();
+  });
+
+  it('flags a wholesale-deleted audit log as tampered, even though the vault itself is untouched', async () => {
+    // Build the state an attacker leaves behind after deleting the entire
+    // audit blob (a separate localStorage key from the vault) without
+    // touching the vault: the vault still remembers a chain tip that no
+    // longer appears anywhere in the (now-empty) audit log.
+    const record = await appendAuditRecord('identifier_added', 'email:hash', STRONG);
+    const vault = createEmptyVault();
+    vault.auditChainTip = { id: record!.id, hash: record!.hash };
+    await saveVault(vault, STRONG);
+    clearAuditCiphertext();
+
+    render(<App />);
+    await unlock();
+
+    expect(
+      await screen.findByText(/audit log appears to have been reset or deleted/i)
+    ).toBeInTheDocument();
   });
 });
 

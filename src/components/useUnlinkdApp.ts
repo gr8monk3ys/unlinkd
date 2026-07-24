@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { appendAuditRecord, loadAuditRecords, verifyAuditChain } from '../core/audit';
+import {
+  appendAuditRecord,
+  auditChainTipMatches,
+  computeAuditChainTip,
+  loadAuditRecords,
+  verifyAuditChain,
+  type AuditChainTip
+} from '../core/audit';
 import { createAgentJobV1, parseAgentResultsV1 } from '../core/agent';
 import { exportBackup, importBackup, wipeAllData } from '../core/backup';
 import { getAppConfig } from '../core/config';
@@ -128,6 +135,10 @@ function activePersona(vault: VaultStateV1): Persona {
 
 export function useUnlinkdApp() {
   const busyRef = useRef(false);
+  // Tracks the audit chain tip so `persist` can commit it into the vault
+  // without re-decrypting the audit log on every save (see `audit` and
+  // `loadAuditCount` below, which are the only places that update it).
+  const auditChainTipRef = useRef<AuditChainTip | null>(null);
 
   const [tab, setTab] = useState<Tab>('dashboard');
 
@@ -227,14 +238,18 @@ export function useUnlinkdApp() {
     }
 
     try {
-      await saveVault(next, passphrase);
+      // Commit the current audit chain tip alongside the vault. This is the
+      // only way a wholesale deletion/replacement of the (separately stored)
+      // audit blob can be detected later — see loadAuditCount below and
+      // core/audit.ts#auditChainTipMatches.
+      await saveVault({ ...next, auditChainTip: auditChainTipRef.current }, passphrase);
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : 'Unable to persist vault.';
       setError(message);
     }
   }
 
-  async function loadAuditCount(pass: string): Promise<void> {
+  async function loadAuditCount(pass: string, vaultSnapshot: VaultStateV1): Promise<void> {
     const auditRecords = await loadAuditRecords(pass);
     if (!auditRecords) {
       setAuditError('Unable to unlock audit log with the provided passphrase.');
@@ -243,10 +258,25 @@ export function useUnlinkdApp() {
     }
 
     setAuditCount(auditRecords.length);
+    auditChainTipRef.current = computeAuditChainTip(auditRecords);
+
     // Passively verify integrity on unlock. Previously verification only ran on
     // an explicit button click, so a tampered chain went unnoticed in normal use.
     const intact = await verifyAuditChain(pass);
-    setAuditError(intact ? null : 'Audit log integrity check failed — records may have been altered.');
+    if (!intact) {
+      setAuditError('Audit log integrity check failed — records may have been altered.');
+      return;
+    }
+
+    // The per-record HMAC chain only proves the records present are
+    // untampered; it can't notice that the whole log was deleted and started
+    // over. Cross-check against the tip the vault remembered.
+    if (!auditChainTipMatches(vaultSnapshot.auditChainTip, auditRecords)) {
+      setAuditError("Audit log appears to have been reset or deleted — it no longer matches the vault's recorded history.");
+      return;
+    }
+
+    setAuditError(null);
   }
 
   async function handleUnlock(): Promise<void> {
@@ -268,7 +298,7 @@ export function useUnlinkdApp() {
       setVault(loaded);
       setIsUnlocked(true);
       setVaultPresent(true);
-      await loadAuditCount(passphrase);
+      await loadAuditCount(passphrase, loaded);
 
       // Surface overdue rechecks as a desktop reminder on unlock (no-op unless
       // the user has opted in). This is the closest a no-backend app gets to the
@@ -301,12 +331,14 @@ export function useUnlinkdApp() {
       setIsUnlocked(true);
       setVaultPresent(true);
       setAuditCount(0);
+      auditChainTipRef.current = null;
     });
   }
 
   async function handleWipeAndRecreate(): Promise<void> {
     await withBusy(async () => {
       await wipeAllData();
+      auditChainTipRef.current = null;
       setVault(null);
       setIsUnlocked(false);
       setVaultPresent(false);
@@ -328,6 +360,9 @@ export function useUnlinkdApp() {
       return;
     }
 
+    // Cheap: reuse the id/hash already computed by appendAuditRecord instead of
+    // re-decrypting the audit log to recompute the tip.
+    auditChainTipRef.current = { id: record.id, hash: record.hash };
     setAuditError(null);
     setAuditCount((count) => count + 1);
   }
@@ -1125,10 +1160,15 @@ export function useUnlinkdApp() {
         setVault(loaded);
         setIsUnlocked(true);
         setVaultPresent(true);
+        // Re-baseline the chain-tip tracking (and re-run the tamper check)
+        // against the imported vault + audit pair, rather than whatever was
+        // cached from before the import.
+        await loadAuditCount(passphrase, loaded);
       } else {
         setVault(null);
         setIsUnlocked(false);
         setVaultPresent(vaultExists());
+        auditChainTipRef.current = null;
       }
 
       await audit('vault_imported', 'backup:import');
@@ -1138,6 +1178,7 @@ export function useUnlinkdApp() {
   async function handleWipeAllData(): Promise<void> {
     await withBusy(async () => {
       await wipeAllData();
+      auditChainTipRef.current = null;
       setVault(null);
       setIsUnlocked(false);
       setVaultPresent(false);

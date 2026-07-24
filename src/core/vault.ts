@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { AuditChainTip } from './audit';
 import { decryptJson, encryptJson } from './crypto';
 import type { Account, ConnectorInstance, Identifier, Persona, RiskFinding } from './types';
 import { isRecord, nowIso } from './utils';
@@ -20,6 +21,14 @@ export interface VaultStateV1 {
   connectorInstances: ConnectorInstance[];
   findings: RiskFinding[];
   settings: VaultSettings;
+  /**
+   * Tip of the audit chain as of the last time this vault was saved, used to
+   * detect wholesale deletion/replacement of the (separately stored) audit
+   * blob. See `core/audit.ts#auditChainTipMatches`. Null before the first
+   * audit record is ever written, or for vaults saved before this field
+   * existed.
+   */
+  auditChainTip: AuditChainTip | null;
 }
 
 const personaSchema = z.object({
@@ -94,6 +103,14 @@ const settingsSchema = z
   })
   .optional();
 
+const auditChainTipSchema = z
+  .object({
+    id: z.string(),
+    hash: z.string()
+  })
+  .nullable()
+  .optional();
+
 const vaultSchemaV1 = z.object({
   version: z.literal(1),
   savedAt: z.string(),
@@ -103,7 +120,8 @@ const vaultSchemaV1 = z.object({
   accounts: z.array(accountSchema),
   connectorInstances: z.array(connectorInstanceSchema),
   findings: z.array(findingSchema),
-  settings: settingsSchema
+  settings: settingsSchema,
+  auditChainTip: auditChainTipSchema
 });
 
 export function createEmptyVault(): VaultStateV1 {
@@ -122,7 +140,8 @@ export function createEmptyVault(): VaultStateV1 {
     accounts: [],
     connectorInstances: [],
     findings: [],
-    settings: {}
+    settings: {},
+    auditChainTip: null
   };
 }
 
@@ -169,7 +188,8 @@ function normalizeVault(value: ParsedVault): VaultStateV1 {
     accounts,
     connectorInstances,
     findings,
-    settings: value.settings ?? {}
+    settings: value.settings ?? {},
+    auditChainTip: value.auditChainTip ?? null
   };
 }
 
