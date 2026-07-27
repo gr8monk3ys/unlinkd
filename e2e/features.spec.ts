@@ -9,6 +9,8 @@ async function createVault(page: Page, passphrase = STRONG): Promise<void> {
   await page.getByLabel('Passphrase', { exact: true }).fill(passphrase);
   await page.getByLabel('Confirm passphrase').fill(passphrase);
   await page.getByRole('button', { name: 'Create Vault' }).click();
+  // A fresh vault opens the onboarding wizard; skip it to reach the app.
+  await page.getByRole('button', { name: 'Skip setup' }).click();
   await expect(page.getByText('Persona: Default')).toBeVisible();
 }
 

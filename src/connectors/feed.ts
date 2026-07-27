@@ -16,6 +16,13 @@ export interface ConnectorCatalogFeedV1 {
 export interface CachedConnectorFeedV1 {
   cachedAt: string;
   feed: ConnectorCatalogFeedV1;
+  /**
+   * The exact bytes the signature was computed over (the raw fetched feed
+   * text). Stored so the cached signature can be re-verified on every load —
+   * a plaintext `verified` flag alone could be forged by anything able to
+   * write localStorage.
+   */
+  feedText: string;
   signature: string | null;
   verified: boolean | null;
   sourceUrl: string;
@@ -24,7 +31,11 @@ export interface CachedConnectorFeedV1 {
 const cachedFeedStorageKey = 'unlinkd.connectors.feed.v1';
 
 function signatureUrlFor(feedUrl: string): string {
-  return feedUrl.endsWith('.json') ? feedUrl.slice(0, -'.json'.length) + '.sig' : `${feedUrl}.sig`;
+  const queryIndex = feedUrl.indexOf('?');
+  const path = queryIndex === -1 ? feedUrl : feedUrl.slice(0, queryIndex);
+  const query = queryIndex === -1 ? '' : feedUrl.slice(queryIndex);
+  const sigPath = path.endsWith('.json') ? path.slice(0, -'.json'.length) + '.sig' : `${path}.sig`;
+  return sigPath + query;
 }
 
 const connectorStepSchema = z.union([
@@ -73,6 +84,7 @@ function cachedFeedSchema(): z.ZodType<CachedConnectorFeedV1> {
   return z.object({
     cachedAt: z.string().min(1),
     feed: feedSchema,
+    feedText: z.string(),
     signature: z.string().nullable(),
     verified: z.boolean().nullable(),
     sourceUrl: z.string().min(1)
@@ -100,6 +112,36 @@ export function loadCachedConnectorFeed(): CachedConnectorFeedV1 | null {
 
   const validated = cachedFeedSchema().safeParse(parsed);
   return validated.success ? validated.data : null;
+}
+
+/**
+ * Load the cached feed and recompute its verification status from the stored
+ * signature over the stored bytes. The persisted `verified` flag is never
+ * trusted: localStorage is writable without the passphrase, so a forged flag
+ * must not be able to present attacker connectors as signature-verified.
+ *
+ * Returns `null` when a cache claims a signature that does not verify (it is
+ * treated as absent rather than downgraded, since its contents are untrusted).
+ */
+export async function loadVerifiedCachedConnectorFeed(
+  publicKeyBase64: string | null
+): Promise<CachedConnectorFeedV1 | null> {
+  const cached = loadCachedConnectorFeed();
+  if (!cached) {
+    return null;
+  }
+
+  if (!cached.signature || !publicKeyBase64) {
+    // Unsigned (manually imported) packs stay explicitly unverified.
+    return { ...cached, verified: null };
+  }
+
+  const ok = await verifySignature(
+    new TextEncoder().encode(cached.feedText),
+    cached.signature,
+    publicKeyBase64
+  );
+  return ok ? { ...cached, verified: true } : null;
 }
 
 export function saveCachedConnectorFeed(value: CachedConnectorFeedV1): void {
@@ -204,6 +246,7 @@ export async function fetchConnectorFeed(options: {
   return {
     cachedAt: new Date().toISOString(),
     feed: validated.data,
+    feedText: jsonText,
     signature,
     verified,
     sourceUrl: options.feedUrl

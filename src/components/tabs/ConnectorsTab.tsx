@@ -61,7 +61,7 @@ const STATE_ORDER: ConnectorState[] = [
 
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;
-  return text.slice(0, maxLen - 1) + '\u2026';
+  return text.slice(0, maxLen - 1) + '…';
 }
 
 function StepChecklist({
@@ -71,49 +71,33 @@ function StepChecklist({
   def: ConnectorDefinition;
   instance: ConnectorInstance;
 }): React.JSX.Element {
-  const totalSteps = def.steps.length;
-  const evidenceCount = instance.evidence.length;
-  const completedEstimate = Math.min(evidenceCount, totalSteps);
-
   return (
     <div style={{ marginTop: '4px', marginBottom: '4px' }}>
-      <p style={{ margin: '2px 0', fontSize: '0.85em', color: '#666' }}>
-        {`Progress: ${completedEstimate} / ${totalSteps} steps with evidence`}
+      <p style={{ margin: '2px 0', fontSize: '0.85em', color: 'var(--text-secondary)' }}>
+        {`${def.steps.length} step${def.steps.length === 1 ? '' : 's'} · ${instance.evidence.length} evidence item${instance.evidence.length === 1 ? '' : 's'} attached`}
       </p>
       <ol style={{ margin: '4px 0', paddingLeft: '1.5em', fontSize: '0.9em' }}>
-        {def.steps.map((step, idx) => {
-          const hasEvidence = idx < evidenceCount;
-          return (
-            <li
-              key={step.id}
-              style={{
-                marginBottom: '2px',
-                color: hasEvidence ? '#2a7d2a' : undefined,
-                listStyleType: hasEvidence ? 'none' : undefined,
-                paddingLeft: hasEvidence ? 0 : undefined
-              }}
-            >
-              <span>
-                {hasEvidence ? '\u2705 ' : '\u2B1C '}
-                <strong>{step.title}</strong>
+        {def.steps.map((step) => (
+          <li key={step.id} style={{ marginBottom: '2px' }}>
+            <span>
+              <strong>{step.title}</strong>
+            </span>
+            {step.type === 'manual' ? (
+              <span style={{ color: 'var(--text-muted)', marginLeft: '8px', fontSize: '0.85em' }}>
+                {truncate(step.instructions, 80)}
               </span>
-              {step.type === 'manual' ? (
-                <span style={{ color: '#888', marginLeft: '8px', fontSize: '0.85em' }}>
-                  {truncate(step.instructions, 80)}
-                </span>
-              ) : (
-                <span style={{ color: '#888', marginLeft: '8px', fontSize: '0.85em' }}>
-                  {`Agent: ${step.action.kind}`}
-                </span>
-              )}
-              {step.evidenceHint ? (
-                <span style={{ color: '#999', marginLeft: '8px', fontSize: '0.8em', fontStyle: 'italic' }}>
-                  {`(${step.evidenceHint})`}
-                </span>
-              ) : null}
-            </li>
-          );
-        })}
+            ) : (
+              <span style={{ color: 'var(--text-muted)', marginLeft: '8px', fontSize: '0.85em' }}>
+                {`Agent: ${step.action.kind}`}
+              </span>
+            )}
+            {step.evidenceHint ? (
+              <span style={{ color: 'var(--text-muted)', marginLeft: '8px', fontSize: '0.8em', fontStyle: 'italic' }}>
+                {`(${step.evidenceHint})`}
+              </span>
+            ) : null}
+          </li>
+        ))}
       </ol>
     </div>
   );
@@ -123,12 +107,6 @@ function InstanceCard({
   instance,
   def,
   catalog,
-  evidenceKind,
-  setEvidenceKind,
-  evidenceLabel,
-  setEvidenceLabel,
-  noteBody,
-  setNoteBody,
   onExportAgentJob,
   onTransition,
   onAddNoteEvidence,
@@ -139,12 +117,6 @@ function InstanceCard({
   instance: ConnectorInstance;
   def: ConnectorDefinition | null;
   catalog: ConnectorDefinition[];
-  evidenceKind: EvidenceKind;
-  setEvidenceKind: (k: EvidenceKind) => void;
-  evidenceLabel: string;
-  setEvidenceLabel: (l: string) => void;
-  noteBody: string;
-  setNoteBody: (b: string) => void;
   onExportAgentJob: (instanceId: string) => void;
   onTransition: (instanceId: string, to: ConnectorState) => void;
   onAddNoteEvidence: (instanceId: string, body: string, label: string) => Promise<boolean>;
@@ -153,33 +125,36 @@ function InstanceCard({
   onDownloadEvidence: (meta: EvidenceMeta) => void;
 }): React.JSX.Element {
   const [expanded, setExpanded] = useState(false);
+  // Evidence form state is per-card: sharing it across cards attached notes to
+  // the wrong connector when more than one card was expanded.
+  const [evidenceKind, setEvidenceKind] = useState<EvidenceKind>('file');
+  const [evidenceLabel, setEvidenceLabel] = useState('');
+  const [noteBody, setNoteBody] = useState('');
   const allowed = nextStates(instance.state);
 
   return (
-    <li
-      style={{
-        border: '1px solid #ddd',
-        borderRadius: '4px',
-        padding: '8px 12px',
-        marginBottom: '6px',
-        background: '#fafafa'
-      }}
-    >
+    <li>
       <div
         style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
         onClick={() => setExpanded(!expanded)}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setExpanded(!expanded); }}
+        aria-expanded={expanded}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setExpanded(!expanded);
+          }
+        }}
       >
-        <span style={{ fontFamily: 'monospace', fontSize: '0.8em' }}>{expanded ? '\u25BC' : '\u25B6'}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8em' }}>{expanded ? '▼' : '▶'}</span>
         <strong>{connectorName(instance.connectorId, catalog)}</strong>
         {def ? (
-          <span style={{ fontSize: '0.8em', color: '#888' }}>
+          <span style={{ fontSize: '0.8em', color: 'var(--text-muted)' }}>
             {`(${def.steps.length} steps, ${instance.evidence.length} evidence)`}
           </span>
         ) : null}
-        <span style={{ marginLeft: 'auto', fontSize: '0.85em' }}>
+        <span style={{ marginLeft: 'auto', fontSize: '0.85em', color: 'var(--text-secondary)' }}>
           {instance.state}
         </span>
       </div>
@@ -203,7 +178,7 @@ function InstanceCard({
                   onClick={() => onTransition(instance.id, state)}
                   style={{ marginRight: '4px' }}
                 >
-                  {`Move \u2192 ${state}`}
+                  {`Move → ${state}`}
                 </button>
               ))}
             </div>
@@ -259,6 +234,8 @@ function InstanceCard({
                 style={{ marginTop: '4px' }}
                 onChange={(event) => {
                   const file = event.target.files?.[0] ?? null;
+                  // Reset so selecting the same file again re-fires the change event.
+                  event.target.value = '';
                   if (file) {
                     void onUploadEvidence(instance.id, file, evidenceKind, evidenceLabel).then((ok) => {
                       if (ok) {
@@ -285,7 +262,7 @@ function InstanceCard({
                 ))}
               </ul>
             ) : (
-              <p style={{ margin: '4px 0', fontSize: '0.85em', color: '#888' }}>No evidence yet.</p>
+              <p style={{ margin: '4px 0', fontSize: '0.85em', color: 'var(--text-muted)' }}>No evidence yet.</p>
             )}
           </section>
         </div>
@@ -295,9 +272,6 @@ function InstanceCard({
 }
 
 export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
-  const [evidenceKind, setEvidenceKind] = useState<EvidenceKind>('file');
-  const [evidenceLabel, setEvidenceLabel] = useState('');
-  const [noteBody, setNoteBody] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('all');
 
@@ -376,6 +350,7 @@ export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
           accept="application/json"
           onChange={(event) => {
             const file = event.target.files?.[0] ?? null;
+            event.target.value = '';
             if (file) {
               props.onImportCatalog(file);
             }
@@ -393,6 +368,7 @@ export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
           accept="application/json"
           onChange={(event) => {
             const file = event.target.files?.[0] ?? null;
+            event.target.value = '';
             if (file) {
               props.onImportAgentResults(file);
             }
@@ -401,7 +377,7 @@ export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
       </label>
 
       {/* ── Search and Filter ── */}
-      <fieldset style={{ border: '1px solid #ccc', borderRadius: '4px', padding: '8px 12px', marginTop: '12px' }}>
+      <fieldset style={{ border: '1px solid var(--border-default)', borderRadius: '4px', padding: '8px 12px', marginTop: '12px' }}>
         <legend>Browse Connectors</legend>
 
         <div style={{ marginBottom: '8px' }}>
@@ -436,7 +412,7 @@ export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
           ))}
         </nav>
 
-        <p style={{ fontSize: '0.85em', color: '#555', margin: '4px 0 8px 0' }}>
+        <p style={{ fontSize: '0.85em', color: 'var(--text-secondary)', margin: '4px 0 8px 0' }}>
           {`Showing ${filteredCatalog.length} of ${props.connectorCatalog.length} connectors`}
         </p>
 
@@ -448,15 +424,14 @@ export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                padding: '4px 6px',
-                borderBottom: '1px solid #eee'
+                padding: '4px 6px'
               }}
             >
               <strong style={{ minWidth: '220px', flexShrink: 0 }}>{def.name}</strong>
               <span
                 style={{
                   flex: 1,
-                  color: '#666',
+                  color: 'var(--text-secondary)',
                   fontSize: '0.9em',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -478,7 +453,7 @@ export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
         </ul>
 
         {filteredCatalog.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#888', padding: '12px' }}>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '12px' }}>
             No connectors match your search.
           </p>
         ) : null}
@@ -487,14 +462,14 @@ export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
       {/* ── My Connectors ── */}
       <h3 style={{ marginTop: '16px' }}>My Connectors</h3>
       {props.connectorInstances.length === 0 ? (
-        <p style={{ color: '#888' }}>No connector instances yet. Add connectors from the catalog above.</p>
+        <p style={{ color: 'var(--text-muted)' }}>No connector instances yet. Add connectors from the catalog above.</p>
       ) : (
         STATE_ORDER.map((state) => {
           const instances = instancesByState[state];
           if (instances.length === 0) return null;
           return (
             <section key={state} style={{ marginBottom: '12px' }}>
-              <h4 style={{ margin: '8px 0 4px 0', borderBottom: '1px solid #ddd', paddingBottom: '2px' }}>
+              <h4 style={{ margin: '8px 0 4px 0', borderBottom: '1px solid var(--border-default)', paddingBottom: '2px' }}>
                 {`${STATE_LABELS[state]} (${instances.length})`}
               </h4>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -506,12 +481,6 @@ export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
                       instance={instance}
                       def={def}
                       catalog={props.connectorCatalog}
-                      evidenceKind={evidenceKind}
-                      setEvidenceKind={setEvidenceKind}
-                      evidenceLabel={evidenceLabel}
-                      setEvidenceLabel={setEvidenceLabel}
-                      noteBody={noteBody}
-                      setNoteBody={setNoteBody}
                       onExportAgentJob={props.onExportAgentJob}
                       onTransition={props.onTransition}
                       onAddNoteEvidence={props.onAddNoteEvidence}

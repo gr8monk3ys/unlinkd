@@ -1,10 +1,15 @@
 # unlinkd
 
-A local-first MVP for personal digital disappearance workflows and OSINT self-scan tooling.
+**Shrink your online footprint. Everything stays on your device.**
+
+unlinkd is a local-first privacy workspace for taking yourself off the
+internet, one severed link at a time: map where you're exposed, run
+self-scans, work through account-removal checklists, and keep encrypted
+proof of every step.
 
 It runs entirely in the browser: all data (personas, identifiers, accounts,
 connectors, findings, evidence, audit log) is encrypted with your passphrase and
-stored locally. There is no backend and no account.
+stored locally. There is no backend, no account, and no tracking.
 
 ## Product Requirements
 
@@ -24,14 +29,25 @@ Shipped today:
 
 - Encrypted local vault and evidence store (IndexedDB). New data is encrypted
   with AES-256-GCM under a key derived by **memory-hard scrypt** from your
-  passphrase (older PBKDF2 envelopes are still read for migration).
+  passphrase. Older PBKDF2 and legacy (unversioned SHA-256) envelopes are still
+  read for migration, and the vault is proactively re-encrypted with scrypt on
+  the next unlock; evidence payloads written before the migration keep their
+  original envelope until re-added. KDF cost parameters read from stored or
+  imported envelopes are bounded, so a hostile envelope cannot peg the tab with
+  absurd work factors.
 - **HMAC-chained audit log**, keyed by a passphrase-derived key and verified
   automatically on unlock. See *Security model* below for exactly what this does
   and does not protect against.
 - Passphrase-protected unlock with a create-vault flow (confirm + strength
-  meter) and an explicit "no recovery" wipe path. Because there is no recovery,
-  **export an encrypted backup regularly** (Backup tab) — browser storage can be
-  cleared by a reinstall, OS reset, or storage eviction.
+  meter) and an explicit "no recovery" wipe path (now behind a two-step
+  confirmation). Because there is no recovery, **export an encrypted backup
+  regularly** (Backup tab) — browser storage can be cleared by a reinstall, OS
+  reset, or storage eviction.
+- **Lock button + auto-lock**: the decrypted vault and passphrase are cleared
+  from memory on demand or after 15 minutes of inactivity.
+- **First-run onboarding wizard**: after creating a vault, a guided setup adds
+  identifiers, imports accounts from a password-manager CSV, and suggests
+  connector workflows.
 - Persona management and cross-persona reuse policy warnings.
 - Identifier ingestion with validation/normalization and policy limits.
 - Heuristic local scan (consent-aware) producing prioritized risk findings.
@@ -83,8 +99,11 @@ Plain statement of what the local-first design does and does not protect:
   a malicious browser extension, or someone with your passphrase). XSS is
   mitigated by a strict CSP but would be serious if it occurred. This is not a
   tool for use on a device shared with your adversary.
+- **Single-tab tool.** There is no cross-tab coordination: two tabs unlocked at
+  once can silently overwrite each other's saves (last write wins). Use one tab
+  at a time; multi-tab safety is tracked as future work.
 
-## MVP Features
+## Feature summary
 
 - Encrypted local vault (personas, identifiers, accounts, connectors, findings).
 - Persona management and cross-persona reuse policy warnings.

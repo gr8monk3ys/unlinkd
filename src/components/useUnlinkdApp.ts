@@ -61,7 +61,7 @@ import {
 } from './notifications';
 import {
   fetchConnectorFeed,
-  loadCachedConnectorFeed,
+  loadVerifiedCachedConnectorFeed,
   parseConnectorCatalogFeedV1,
   parseConnectorDefinitions,
   saveCachedConnectorFeed
@@ -99,12 +99,29 @@ const connectorFeedUrl = import.meta.env.VITE_CONNECTOR_FEED_URL ?? '/connectors
 const connectorFeedPublicKeyBase64 =
   import.meta.env.VITE_CONNECTOR_FEED_PUBKEY ?? 'sRrWiocnHbnAcLQ59Bl6gQVUoDUVeLVw2lesvu2mWKM=';
 
+/** Auto-lock the vault after this much inactivity (privacy default). */
+export const AUTO_LOCK_MINUTES = 15;
+
+/** Only http(s) URLs may be stored on accounts and rendered as links. */
+export function sanitizeHttpUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : null;
+  } catch {
+    return null;
+  }
+}
+
 function addDaysIso(days: number): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
-function downloadTextFile(filename: string, content: string): void {
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+function downloadBlob(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -115,6 +132,10 @@ function downloadTextFile(filename: string, content: string): void {
   link.remove();
   // Allow the browser to start the download before revoking the blob URL.
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function downloadTextFile(filename: string, content: string): void {
+  downloadBlob(filename, new Blob([content], { type: 'text/plain;charset=utf-8' }));
 }
 
 function downloadJsonFile(filename: string, value: unknown): void {
@@ -135,6 +156,9 @@ export function useUnlinkdApp() {
   const [vault, setVault] = useState<VaultStateV1 | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [vaultPresent, setVaultPresent] = useState<boolean>(() => vaultExists());
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [auditError, setAuditError] = useState<string | null>(null);
@@ -191,48 +215,107 @@ export function useUnlinkdApp() {
   );
 
   useEffect(() => {
-    const cached = loadCachedConnectorFeed();
-    if (!cached) {
-      return;
-    }
+    let cancelled = false;
 
-    setConnectorCatalog(mergeConnectorCatalogs(builtinConnectorCatalog, cached.feed.connectors));
-    setConnectorCatalogMeta({
-      source: 'cache',
-      catalogVersion: cached.feed.catalogVersion,
-      generatedAt: cached.feed.generatedAt,
-      verified: cached.verified,
-      updatedAt: cached.cachedAt,
-      error: null
-    });
+    void (async () => {
+      const cached = await loadVerifiedCachedConnectorFeed(connectorFeedKey());
+      if (!cached || cancelled) {
+        return;
+      }
+
+      setConnectorCatalog(mergeConnectorCatalogs(builtinConnectorCatalog, cached.feed.connectors));
+      setConnectorCatalogMeta({
+        source: 'cache',
+        catalogVersion: cached.feed.catalogVersion,
+        generatedAt: cached.feed.generatedAt,
+        verified: cached.verified,
+        updatedAt: cached.cachedAt,
+        error: null
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function withBusy<T>(fn: () => Promise<T>): Promise<T | null> {
     if (busyRef.current) {
+      // Never silently swallow a user action: previously concurrent clicks were
+      // dropped with no feedback at all.
+      setError('Another operation is still in progress — wait a moment and try again.');
       return null;
     }
 
     busyRef.current = true;
+    setBusy(true);
     try {
       return await fn();
     } finally {
       busyRef.current = false;
+      setBusy(false);
     }
   }
 
-  async function persist(next: VaultStateV1): Promise<void> {
+  async function persist(next: VaultStateV1): Promise<boolean> {
     if (!passphrase) {
       setError('Passphrase missing.');
-      return;
+      return false;
     }
 
     try {
       await saveVault(next, passphrase);
+      return true;
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : 'Unable to persist vault.';
       setError(message);
+      return false;
     }
   }
+
+  function lockVault(reason?: string): void {
+    setVault(null);
+    setIsUnlocked(false);
+    setPassphrase('');
+    setShowOnboarding(false);
+    setTab('dashboard');
+    setError(null);
+    setAuditError(null);
+    setAuditCount(0);
+    setAccountsImportStatus(null);
+    setNotice(reason ?? null);
+  }
+
+  function handleLock(): void {
+    lockVault('Vault locked. Your data stays encrypted on this device.');
+  }
+
+  // Auto-lock after inactivity: clears the passphrase and decrypted vault from
+  // memory so an unattended machine does not stay exposed indefinitely.
+  useEffect(() => {
+    if (!isUnlocked) {
+      return;
+    }
+
+    const autoLockMs = AUTO_LOCK_MINUTES * 60 * 1000;
+    let timer = window.setTimeout(fire, autoLockMs);
+
+    function fire(): void {
+      lockVault(`Locked after ${AUTO_LOCK_MINUTES} minutes of inactivity.`);
+    }
+
+    function reset(): void {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(fire, autoLockMs);
+    }
+
+    const events: (keyof WindowEventMap)[] = ['pointerdown', 'keydown', 'wheel', 'touchstart'];
+    events.forEach((name) => window.addEventListener(name, reset, { passive: true }));
+    return () => {
+      window.clearTimeout(timer);
+      events.forEach((name) => window.removeEventListener(name, reset));
+    };
+  }, [isUnlocked]);
 
   async function loadAuditCount(pass: string): Promise<void> {
     const auditRecords = await loadAuditRecords(pass);
@@ -253,6 +336,7 @@ export function useUnlinkdApp() {
     await withBusy(async () => {
       setError(null);
       setAuditError(null);
+      setNotice(null);
 
       if (!passphrase) {
         setError('Passphrase is required to unlock storage.');
@@ -272,8 +356,14 @@ export function useUnlinkdApp() {
 
       // Surface overdue rechecks as a desktop reminder on unlock (no-op unless
       // the user has opted in). This is the closest a no-backend app gets to the
-      // "recheck cadence" the connector model promises.
-      notifyRechecksDue(dueConnectorInstances(loaded.connectorInstances).length);
+      // "recheck cadence" the connector model promises. Count only the active
+      // persona so the reminder matches what the dashboard will show.
+      const active = activePersona(loaded);
+      notifyRechecksDue(
+        dueConnectorInstances(
+          loaded.connectorInstances.filter((item) => item.personaId === active.id)
+        ).length
+      );
     });
   }
 
@@ -289,9 +379,18 @@ export function useUnlinkdApp() {
     await withBusy(async () => {
       setError(null);
       setAuditError(null);
+      setNotice(null);
 
       if (!passphrase) {
         setError('Passphrase is required.');
+        return;
+      }
+
+      // Guard against a stale create screen: another tab may have created a
+      // vault since this one loaded, and overwriting it would destroy it.
+      if (vaultExists()) {
+        setVaultPresent(true);
+        setError('A vault already exists on this device (possibly created in another tab). Unlock it instead.');
         return;
       }
 
@@ -301,19 +400,22 @@ export function useUnlinkdApp() {
       setIsUnlocked(true);
       setVaultPresent(true);
       setAuditCount(0);
+      setShowOnboarding(true);
     });
   }
 
   async function handleWipeAndRecreate(): Promise<void> {
     await withBusy(async () => {
-      await wipeAllData();
-      setVault(null);
-      setIsUnlocked(false);
+      try {
+        await wipeAllData();
+      } catch (caught) {
+        const message = caught instanceof Error ? caught.message : 'Unable to wipe local data.';
+        setError(`Wipe failed — some data may remain on this device. ${message}`);
+        return;
+      }
+
+      lockVault('All local data has been wiped from this device.');
       setVaultPresent(false);
-      setPassphrase('');
-      setError(null);
-      setAuditError(null);
-      setAuditCount(0);
     });
   }
 
@@ -338,6 +440,8 @@ export function useUnlinkdApp() {
     }
 
     await withBusy(async () => {
+      setError(null);
+
       const nextPersona: Persona = {
         id: crypto.randomUUID(),
         name,
@@ -357,6 +461,8 @@ export function useUnlinkdApp() {
     }
 
     await withBusy(async () => {
+      setError(null);
+
       const next = setActivePersona(vault, personaId);
       setVault(next);
       await persist(next);
@@ -373,12 +479,14 @@ export function useUnlinkdApp() {
       setConnectorCatalogMeta((meta) => ({ ...meta, error: null }));
 
       try {
-        const cached = loadCachedConnectorFeed();
+        const cached = await loadVerifiedCachedConnectorFeed(connectorFeedKey());
         const fetched = await fetchConnectorFeed({
           feedUrl: connectorFeedUrl,
           publicKeyBase64: connectorFeedKey(),
           // Reject a feed older than the one we already trust (rollback/replay).
-          minGeneratedAt: cached?.feed.generatedAt ?? null
+          // Only a signature-verified cache sets the watermark: an unsigned
+          // manual import must not be able to wedge or poison signed updates.
+          minGeneratedAt: cached?.verified === true ? cached.feed.generatedAt : null
         });
 
         saveCachedConnectorFeed(fetched);
@@ -428,6 +536,7 @@ export function useUnlinkdApp() {
       const cached = {
         cachedAt: new Date().toISOString(),
         feed: normalizedFeed,
+        feedText: JSON.stringify(normalizedFeed),
         signature: null,
         verified: null,
         sourceUrl: 'import'
@@ -525,6 +634,12 @@ export function useUnlinkdApp() {
         return false;
       }
 
+      const safeUrl = trimmedUrl ? sanitizeHttpUrl(trimmedUrl) : null;
+      if (trimmedUrl && !safeUrl) {
+        setError('Account URL must be a valid http(s) URL.');
+        return false;
+      }
+
       const exists = vault.accounts.some(
         (account) =>
           account.personaId === persona.id &&
@@ -541,7 +656,7 @@ export function useUnlinkdApp() {
         personaId: persona.id,
         service: trimmedService,
         username: trimmedUsername,
-        url: trimmedUrl ? trimmedUrl : undefined,
+        url: safeUrl ?? undefined,
         status,
         createdAt: nowIso()
       };
@@ -594,7 +709,9 @@ export function useUnlinkdApp() {
           personaId: persona.id,
           service: row.service,
           username: row.username,
-          url: row.url,
+          // Never store a non-http(s) URL from an untrusted CSV: it is later
+          // rendered as a clickable link.
+          url: row.url ? (sanitizeHttpUrl(row.url) ?? undefined) : undefined,
           lastSeenAt: row.lastSeenAt,
           status: row.status,
           createdAt: nowIso()
@@ -811,9 +928,13 @@ export function useUnlinkdApp() {
         return;
       }
 
+      setError(null);
+
       const def = getConnectorDefinition(instance.connectorId, connectorCatalog);
       const nextCheckAt =
-        to === 'recheck_scheduled' && def ? addDaysIso(def.defaultRecheckDays) : instance.nextCheckAt;
+        to === 'recheck_scheduled'
+          ? addDaysIso(def?.defaultRecheckDays ?? 30)
+          : instance.nextCheckAt;
 
       const next = applyConnectorTransition(vault, instanceId, { to, nextCheckAt, updatedAt: nowIso() });
 
@@ -1007,13 +1128,7 @@ export function useUnlinkdApp() {
         return;
       }
 
-      const blob = new Blob([bytes], { type: meta.mimeType });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = meta.filename;
-      link.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(meta.filename, new Blob([bytes], { type: meta.mimeType }));
     });
   }
 
@@ -1058,17 +1173,23 @@ export function useUnlinkdApp() {
     });
   }
 
-  async function handleSaveHibpApiKey(key: string): Promise<void> {
+  async function handleSaveHibpApiKey(key: string): Promise<boolean> {
     if (!vault) {
-      return;
+      return false;
     }
 
-    await withBusy(async () => {
+    const result = await withBusy(async () => {
       const next = setHibpApiKey(vault, key);
       setVault(next);
-      await persist(next);
+      if (!(await persist(next))) {
+        return false;
+      }
+
       await audit('settings_updated', `settings:hibpApiKey:${key.trim().length > 0 ? 'set' : 'cleared'}`);
+      return true;
     });
+
+    return result ?? false;
   }
 
   async function handleCheckPassword(password: string): Promise<number | null> {
@@ -1132,19 +1253,142 @@ export function useUnlinkdApp() {
       }
 
       await audit('vault_imported', 'backup:import');
+      // The imported audit log replaced the previous one; refresh the count so
+      // the dashboard reflects the imported chain rather than the old total.
+      if (passphrase && loaded) {
+        await loadAuditCount(passphrase);
+      }
     });
   }
 
   async function handleWipeAllData(): Promise<void> {
     await withBusy(async () => {
-      await wipeAllData();
-      setVault(null);
-      setIsUnlocked(false);
+      try {
+        await wipeAllData();
+      } catch (caught) {
+        const message = caught instanceof Error ? caught.message : 'Unable to wipe local data.';
+        setError(`Wipe failed — some data may remain on this device. ${message}`);
+        return;
+      }
+
+      lockVault('All local data has been wiped from this device.');
       setVaultPresent(false);
-      setError(null);
-      setAuditError(null);
-      setAuditCount(0);
     });
+  }
+
+  // Onboarding batch handlers: add everything in a single vault update so the
+  // wizard cannot lose writes to stale closures, and return real counts so its
+  // summary reflects what actually happened.
+  async function handleOnboardingAddIdentifiers(
+    items: { type: IdentifierType; value: string }[]
+  ): Promise<number> {
+    if (!vault || !persona) {
+      return 0;
+    }
+
+    const result = await withBusy(async () => {
+      setError(null);
+
+      let next = vault;
+      let added = 0;
+      for (const item of items) {
+        const validated = validateIdentifierInput(item.type, item.value);
+        if (!validated.ok || !validated.normalizedType) {
+          continue;
+        }
+
+        const local = next.identifiers.filter(
+          (identifier) => (identifier.personaId ?? persona.id) === persona.id
+        );
+        if (hasDuplicateIdentifier(local, validated.normalizedType, validated.normalizedValue)) {
+          continue;
+        }
+
+        if (!canAddIdentifier(next.identifiers, config.maxIdentifiers)) {
+          break;
+        }
+
+        next = addIdentifier(next, {
+          id: crypto.randomUUID(),
+          personaId: persona.id,
+          type: validated.normalizedType,
+          value: validated.normalizedValue,
+          sensitivity: validated.normalizedType === 'address' ? 3 : 2,
+          consent: true,
+          createdAt: nowIso()
+        });
+        added += 1;
+      }
+
+      if (added === 0) {
+        return 0;
+      }
+
+      setVault(next);
+      if (!(await persist(next))) {
+        return 0;
+      }
+
+      await audit('identifier_added', `onboarding:${added}`);
+      return added;
+    });
+
+    return result ?? 0;
+  }
+
+  async function handleOnboardingAddConnectors(connectorIds: string[]): Promise<number> {
+    if (!vault || !persona) {
+      return 0;
+    }
+
+    const result = await withBusy(async () => {
+      setError(null);
+
+      let next = vault;
+      const added: string[] = [];
+      for (const connectorId of connectorIds) {
+        const def = getConnectorDefinition(connectorId, connectorCatalog);
+        if (!def) {
+          continue;
+        }
+
+        const exists = next.connectorInstances.some(
+          (item) => item.personaId === persona.id && item.connectorId === connectorId
+        );
+        if (exists) {
+          continue;
+        }
+
+        next = addConnectorInstance(next, {
+          id: crypto.randomUUID(),
+          connectorId,
+          personaId: persona.id,
+          state: 'discovered',
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+          evidence: []
+        });
+        added.push(connectorId);
+      }
+
+      if (added.length === 0) {
+        return 0;
+      }
+
+      setVault(next);
+      if (!(await persist(next))) {
+        return 0;
+      }
+
+      await audit('connector_added', `onboarding:${added.join(',')}`);
+      return added.length;
+    });
+
+    return result ?? 0;
+  }
+
+  function handleCompleteOnboarding(): void {
+    setShowOnboarding(false);
   }
 
   const connectorInstances = vault && persona
@@ -1162,6 +1406,9 @@ export function useUnlinkdApp() {
     persona,
     isUnlocked,
     vaultPresent,
+    busy,
+    notice,
+    showOnboarding,
     error,
     auditError,
     auditCount,
@@ -1181,8 +1428,12 @@ export function useUnlinkdApp() {
     // handlers
     handleEnableReminders,
     handleUnlock,
+    handleLock,
     handleCreateVault,
     handleWipeAndRecreate,
+    handleOnboardingAddIdentifiers,
+    handleOnboardingAddConnectors,
+    handleCompleteOnboarding,
     handleAddPersona,
     handleSetActivePersona,
     handleUpdateConnectorCatalog,

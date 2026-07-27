@@ -2,7 +2,7 @@ import { clearAuditCiphertext, getRawAuditCiphertext, setRawAuditCiphertext } fr
 import { decryptJson, isEncryptedPayload } from './crypto';
 import { clearEvidenceStore, listEvidencePayloads, putEvidencePayload } from './evidence';
 import { isRecord, nowIso } from './utils';
-import { clearVaultCiphertext, getRawVaultCiphertext, setRawVaultCiphertext } from './vault';
+import { clearVaultCiphertext, getRawVaultCiphertext, isVaultPlaintext, setRawVaultCiphertext } from './vault';
 
 export interface BackupFileV1 {
   version: 1;
@@ -77,12 +77,22 @@ function validateBackupStructure(file: unknown): asserts file is BackupFileV1 {
  * - The file is fully validated as ciphertext envelopes BEFORE any write, so an
  *   invalid file cannot destroy existing data.
  * - When `expectedPassphrase` is supplied, the vault ciphertext must actually
- *   decrypt with it; otherwise import aborts (prevents locking yourself out by
- *   restoring a backup encrypted under a different passphrase).
- * - Vault/audit are snapshotted and rolled back if a write fails partway.
+ *   decrypt with it AND the plaintext must parse as a vault; otherwise import
+ *   aborts (prevents locking yourself out by restoring a backup encrypted under
+ *   a different passphrase, or bricking the app with a decryptable non-vault).
+ * - A backup with no vault is refused while a live vault exists — restoring an
+ *   "empty" file must never silently destroy data; wipe explicitly instead.
+ * - Vault, audit, AND evidence are snapshotted and rolled back (best effort)
+ *   if a write fails partway.
  */
 export async function importBackup(file: unknown, expectedPassphrase?: string): Promise<void> {
   validateBackupStructure(file);
+
+  if (file.vaultCiphertext === null && getRawVaultCiphertext() !== null) {
+    throw new Error(
+      'Backup contains no vault, but this device has one. Import aborted — wipe local data explicitly first if you really want to start empty.'
+    );
+  }
 
   if (expectedPassphrase !== undefined && file.vaultCiphertext) {
     const parsed = JSON.parse(file.vaultCiphertext) as unknown;
@@ -90,10 +100,17 @@ export async function importBackup(file: unknown, expectedPassphrase?: string): 
     if (decrypted === null) {
       throw new Error('Backup cannot be unlocked with the current passphrase. Import aborted; existing data is unchanged.');
     }
+    if (!isVaultPlaintext(decrypted)) {
+      throw new Error('Backup vault payload decrypts but is not a valid vault. Import aborted; existing data is unchanged.');
+    }
   }
 
   const prevVault = getRawVaultCiphertext();
   const prevAudit = getRawAuditCiphertext();
+  // Snapshot evidence so a mid-import write failure (e.g. storage quota) can
+  // restore it — previously only vault/audit rolled back and the original
+  // evidence payloads were already destroyed by clearEvidenceStore().
+  const prevEvidence = await listEvidencePayloads();
 
   try {
     if (file.vaultCiphertext) {
@@ -113,23 +130,43 @@ export async function importBackup(file: unknown, expectedPassphrase?: string): 
       await putEvidencePayload(row.id, row.payload as never);
     }
   } catch (error) {
-    // Roll back the critical vault/audit state on any write failure.
-    if (prevVault !== null) {
-      setRawVaultCiphertext(prevVault);
-    } else {
-      clearVaultCiphertext();
+    // Roll back on any write failure. Each step is isolated so one failing
+    // rollback write cannot abort the rest or mask the original error.
+    try {
+      if (prevVault !== null) {
+        setRawVaultCiphertext(prevVault);
+      } else {
+        clearVaultCiphertext();
+      }
+    } catch {
+      // best effort
     }
-    if (prevAudit !== null) {
-      setRawAuditCiphertext(prevAudit);
-    } else {
-      clearAuditCiphertext();
+    try {
+      if (prevAudit !== null) {
+        setRawAuditCiphertext(prevAudit);
+      } else {
+        clearAuditCiphertext();
+      }
+    } catch {
+      // best effort
+    }
+    try {
+      await clearEvidenceStore();
+      for (const row of prevEvidence) {
+        await putEvidencePayload(row.id, row.payload);
+      }
+    } catch {
+      // best effort
     }
     throw error instanceof Error ? error : new Error('Backup import failed.');
   }
 }
 
 export async function wipeAllData(): Promise<void> {
-  await clearEvidenceStore();
+  // Clear the synchronous localStorage ciphertexts FIRST: if the IndexedDB
+  // evidence wipe then fails, the vault and audit log are already gone rather
+  // than silently left behind by an early rejection.
   clearVaultCiphertext();
   clearAuditCiphertext();
+  await clearEvidenceStore();
 }

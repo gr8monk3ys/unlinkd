@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { decryptJson, encryptJson } from './crypto';
+import { decryptJson, encryptJson, needsKdfUpgrade } from './crypto';
 import type { Account, ConnectorInstance, Identifier, Persona, RiskFinding } from './types';
 import { isRecord, nowIso } from './utils';
 
@@ -217,12 +217,24 @@ export async function loadVault(passphrase: string): Promise<VaultStateV1 | null
 
   const normalized = normalizeVault(validated.data);
 
-  // Keep storage normalized after migrations.
-  if (JSON.stringify(normalized) !== JSON.stringify(validated.data)) {
+  // Keep storage normalized after migrations, and proactively re-encrypt
+  // envelopes still written with a pre-scrypt KDF so data at rest does not
+  // stay under a weaker derivation any longer than necessary.
+  if (needsKdfUpgrade(parsed) || JSON.stringify(normalized) !== JSON.stringify(validated.data)) {
     await saveVault(normalized, passphrase);
   }
 
   return normalized;
+}
+
+/**
+ * Returns true if `value` (a decrypted plaintext) parses as a v1 vault. Backup
+ * import uses this to guarantee the ciphertext it is about to install actually
+ * contains a vault — a decryptable-but-wrong payload would otherwise brick the
+ * app after import.
+ */
+export function isVaultPlaintext(value: unknown): boolean {
+  return vaultSchemaV1.safeParse(value).success;
 }
 
 export async function saveVault(state: VaultStateV1, passphrase: string): Promise<void> {

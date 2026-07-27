@@ -1,7 +1,7 @@
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { hmac } from '@noble/hashes/hmac.js';
 import { sha256 } from '@noble/hashes/sha2.js';
-import { decryptJson, encryptJson } from './crypto';
+import { decryptJson, encryptJson, passphraseBytes } from './crypto';
 import { isRecord } from './utils';
 
 export const auditActions = [
@@ -53,7 +53,9 @@ interface AuditEnvelope {
 }
 
 function deriveAuditMacKey(passphrase: string): Uint8Array {
-  return hkdf(sha256, encoder.encode(passphrase), AUDIT_MAC_SALT, AUDIT_MAC_INFO, 32);
+  // NFC-normalized (see passphraseBytes) so the MAC key matches the vault key
+  // derivation for the same visual passphrase across OS/IME encodings.
+  return hkdf(sha256, passphraseBytes(passphrase), AUDIT_MAC_SALT, AUDIT_MAC_INFO, 32);
 }
 
 function toHex(bytes: Uint8Array): string {
