@@ -4,7 +4,12 @@ import { sha512 } from '@noble/hashes/sha2.js';
 import type { ConnectorDefinition } from '../core/types';
 import { fromBase64, isRecord } from '../core/utils';
 
+// Use the pure-JS SHA-512 for both sync and async ed25519 paths. The async
+// default falls back to WebCrypto's subtle.digest, whose strict argument
+// validation rejects cross-realm typed arrays (e.g. jsdom's Uint8Array on
+// newer Node), making verification environment-dependent.
 ed.hashes.sha512 = sha512;
+ed.hashes.sha512Async = (message) => Promise.resolve(sha512(message));
 
 export interface ConnectorCatalogFeedV1 {
   version: 1;
