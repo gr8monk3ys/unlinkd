@@ -1,15 +1,23 @@
 # unlinkd
 
-**Shrink your online footprint. Everything stays on your device.**
+**Get yourself removed from the internet — and keep the proof.**
 
-unlinkd is a local-first privacy workspace for taking yourself off the
-internet, one severed link at a time: map where you're exposed, run
-self-scans, work through account-removal checklists, and keep encrypted
-proof of every step.
+Removal is not the hard part; *proving* it is. Requests get ignored, brokers
+re-list you months later, and by the time you need to escalate you no longer
+remember what you sent, to whom, or when. unlinkd is a local-first workspace
+that keeps that record: work through data-broker and account-removal
+checklists, capture encrypted evidence of each request, and keep a
+tamper-evident log of what you asked and when — the paper trail a GDPR or CCPA
+escalation actually needs.
 
 It runs entirely in the browser: all data (personas, identifiers, accounts,
 connectors, findings, evidence, audit log) is encrypted with your passphrase and
 stored locally. There is no backend, no account, and no tracking.
+
+> **Scope, plainly:** the connector catalog is *guided manual checklists*. A
+> small number of connectors carry agent steps that navigate to a URL and take a
+> screenshot. unlinkd captures and organizes evidence; it does not submit
+> opt-outs for you. See *Honest scope* below.
 
 ## Product Requirements
 
@@ -45,6 +53,15 @@ Shipped today:
   reset, or storage eviction.
 - **Lock button + auto-lock**: the decrypted vault and passphrase are cleared
   from memory on demand or after 15 minutes of inactivity.
+- **Durability safeguards**: persistent-storage request on unlock, storage
+  usage/quota and persistence state in the Backup tab, and backup-staleness
+  warnings on the Dashboard.
+- **Cross-tab safety**: compare-and-swap on vault writes, retry-on-conflict for
+  audit appends, and BroadcastChannel sync between open tabs.
+- **Connector freshness surfaced in-app**: connectors past the 90-day review
+  cadence are badged unverified, with a catalog-level count.
+- **Evidence re-encryption**: evidence written under an older KDF can be
+  upgraded to the current memory-hard scrypt envelope from the Backup tab.
 - **First-run onboarding wizard**: after creating a vault, a guided setup adds
   identifiers, imports accounts from a password-manager CSV, and suggests
   connector workflows.
@@ -67,7 +84,9 @@ Not yet built (tracked in the PRD as future work): cross-device sync, MFA
 posture scoring, recovery-factor enforcement, jurisdiction compliance profiles,
 and the self-hosted infrastructure/network stack.
 
-**Honest scope of "connector automation":** the catalog is overwhelmingly
+### Honest scope
+
+**"Connector automation":** the catalog is overwhelmingly
 *guided manual checklists*. A small number of connectors carry agent steps, and
 today those steps **only navigate to a URL and take a screenshot** — they do not
 fill forms, submit opt-outs, or change account settings. The agent captures
@@ -99,9 +118,18 @@ Plain statement of what the local-first design does and does not protect:
   a malicious browser extension, or someone with your passphrase). XSS is
   mitigated by a strict CSP but would be serious if it occurred. This is not a
   tool for use on a device shared with your adversary.
-- **Single-tab tool.** There is no cross-tab coordination: two tabs unlocked at
-  once can silently overwrite each other's saves (last write wins). Use one tab
-  at a time; multi-tab safety is tracked as future work.
+- **Durability, not just confidentiality.** The realistic way to lose this data
+  is browser eviction, not an attacker. unlinkd requests persistent storage on
+  unlock and reports whether it was granted (Backup tab), but the only durable
+  copy is an exported backup — the app warns when the last one is over 14 days
+  old.
+- **Multi-tab writes are guarded, not merged.** Vault saves use a
+  compare-and-swap against the stored ciphertext, and audit appends retry on top
+  of a concurrent writer's chain, so a second tab can no longer silently destroy
+  the first tab's work. Tabs also announce writes to each other and re-read.
+  What is *not* provided is field-level merging: if two tabs edit concurrently,
+  the loser is told its change was not saved and is refreshed, rather than being
+  merged automatically.
 
 ## Feature summary
 

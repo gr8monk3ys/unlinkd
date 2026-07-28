@@ -122,6 +122,7 @@ export function App(): React.JSX.Element {
       </nav>
 
       {app.busy ? <p role="status">Working…</p> : null}
+      {app.notice ? <p role="status">{app.notice}</p> : null}
       {app.error ? <p role="alert">{app.error}</p> : null}
 
       <div id="tab-content">
@@ -146,6 +147,8 @@ export function App(): React.JSX.Element {
           connectorInstances={app.connectorInstances}
           findings={app.prioritizedFindings}
           personaName={persona.name}
+          backupStatus={app.backupStatus}
+          onGoToBackup={() => setTab('backup')}
         />
         </div>
       ) : null}
@@ -234,6 +237,10 @@ export function App(): React.JSX.Element {
           onExportBackup={() => void app.handleExportBackup()}
           onImportBackup={(file) => void app.handleImportBackup(file)}
           onWipeAllData={() => void app.handleWipeAllData()}
+          backupStatus={app.backupStatus}
+          storageHealth={app.storageHealth}
+          legacyEvidenceCount={app.legacyEvidenceCount}
+          onUpgradeLegacyEvidence={() => void app.handleUpgradeLegacyEvidence()}
         />
         </div>
       ) : null}

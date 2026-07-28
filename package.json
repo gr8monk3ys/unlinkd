@@ -1,7 +1,7 @@
 {
   "name": "unlinkd",
   "version": "1.0.0",
-  "description": "Local-first privacy workspace: map your online exposure, work through account-removal checklists, and keep encrypted evidence — entirely in your browser.",
+  "description": "Local-first workspace for getting removed from the internet and proving it: opt-out checklists, encrypted evidence capture, and a tamper-evident record of every request — entirely in your browser.",
   "main": "index.js",
   "directories": {
     "doc": "docs"

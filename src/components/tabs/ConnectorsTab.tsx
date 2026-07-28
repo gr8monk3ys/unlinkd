@@ -8,7 +8,12 @@ import type {
   EvidenceMeta
 } from '../../core/types';
 import { getConnectorDefinition, type ConnectorCatalogMeta } from '../../connectors/catalog';
-import { connectorName } from '../../core/connectors';
+import {
+  CONNECTOR_REVIEW_CADENCE_DAYS,
+  connectorName,
+  connectorReviewAgeDays,
+  isConnectorStale
+} from '../../core/connectors';
 import { nextStates } from '../../core/workflow';
 
 export type { ConnectorCatalogMeta };
@@ -62,6 +67,28 @@ const STATE_ORDER: ConnectorState[] = [
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;
   return text.slice(0, maxLen - 1) + '…';
+}
+
+/** Warns that a connector's steps may no longer match the provider's real flow. */
+function StalenessBadge({ def }: { def: ConnectorDefinition }): React.JSX.Element | null {
+  if (!isConnectorStale(def)) {
+    return null;
+  }
+
+  const age = connectorReviewAgeDays(def);
+  const label =
+    age === null
+      ? 'Steps carry no review date — verify against the provider before relying on them.'
+      : `Steps last reviewed ${String(age)} days ago (cadence is ${String(CONNECTOR_REVIEW_CADENCE_DAYS)}); the provider may have changed its flow since.`;
+
+  return (
+    <span
+      title={label}
+      style={{ color: 'var(--accent-amber)', fontSize: '0.8em', flexShrink: 0 }}
+    >
+      {'⚠ unverified'}
+    </span>
+  );
 }
 
 function StepChecklist({
@@ -154,6 +181,7 @@ function InstanceCard({
             {`(${def.steps.length} steps, ${instance.evidence.length} evidence)`}
           </span>
         ) : null}
+        {def ? <StalenessBadge def={def} /> : null}
         <span style={{ marginLeft: 'auto', fontSize: '0.85em', color: 'var(--text-secondary)' }}>
           {instance.state}
         </span>
@@ -189,20 +217,34 @@ function InstanceCard({
           <section>
             <h4 style={{ margin: '8px 0 4px 0' }}>Evidence</h4>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <label>
-                Kind
-                <select value={evidenceKind} onChange={(event) => setEvidenceKind(event.target.value as EvidenceKind)}>
+              {/*
+                Explicit htmlFor/id rather than wrapping the control: a <label>
+                that wraps a <select> folds every option into the control's
+                accessible name ("Kind file screenshot pdf email note").
+              */}
+              <div>
+                <label htmlFor={`evidence-kind-${instance.id}`}>Kind</label>
+                <select
+                  id={`evidence-kind-${instance.id}`}
+                  value={evidenceKind}
+                  onChange={(event) => setEvidenceKind(event.target.value as EvidenceKind)}
+                >
                   <option value="file">file</option>
                   <option value="screenshot">screenshot</option>
                   <option value="pdf">pdf</option>
                   <option value="email">email</option>
                   <option value="note">note</option>
                 </select>
-              </label>
-              <label>
-                Label
-                <input value={evidenceLabel} onChange={(event) => setEvidenceLabel(event.target.value)} placeholder="optional label" />
-              </label>
+              </div>
+              <div>
+                <label htmlFor={`evidence-label-${instance.id}`}>Label</label>
+                <input
+                  id={`evidence-label-${instance.id}`}
+                  value={evidenceLabel}
+                  onChange={(event) => setEvidenceLabel(event.target.value)}
+                  placeholder="optional label"
+                />
+              </div>
             </div>
             {evidenceKind === 'note' ? (
               <div style={{ marginTop: '4px' }}>
@@ -310,6 +352,11 @@ export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [props.connectorCatalog, searchQuery, activeCategory]);
 
+  const staleCount = useMemo(
+    () => props.connectorCatalog.filter((def) => isConnectorStale(def)).length,
+    [props.connectorCatalog]
+  );
+
   // Group instances by state
   const instancesByState = useMemo(() => {
     const groups: Record<ConnectorState, ConnectorInstance[]> = {
@@ -340,6 +387,11 @@ export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
       <p>{`Signature verified: ${
         props.connectorCatalogMeta.verified === null ? 'unknown' : props.connectorCatalogMeta.verified ? 'yes' : 'no'
       }`}</p>
+      {staleCount > 0 ? (
+        <p role="status">
+          {`${String(staleCount)} of ${String(props.connectorCatalog.length)} connectors have not been reviewed within ${String(CONNECTOR_REVIEW_CADENCE_DAYS)} days. Their steps may no longer match the provider — update the catalog, and verify before relying on them.`}
+        </p>
+      ) : null}
       <button type="button" onClick={() => props.onUpdateCatalog()}>
         Update Catalog
       </button>
@@ -441,6 +493,7 @@ export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
               >
                 {def.description}
               </span>
+              <StalenessBadge def={def} />
               <button
                 type="button"
                 onClick={() => props.onAddConnector(def)}

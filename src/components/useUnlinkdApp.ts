@@ -28,11 +28,14 @@ import { canTransition } from '../core/workflow';
 import {
   createEmptyVault,
   loadVault,
+  resetVaultSyncState,
   saveVault,
   unlockVault,
+  VaultConflictError,
   vaultExists,
   type VaultStateV1
 } from '../core/vault';
+import { broadcastVaultChanged, subscribeVaultChanged } from '../core/sync';
 import {
   builtinConnectorCatalog,
   builtinConnectorCatalogVersion,
@@ -51,8 +54,16 @@ import {
   replaceConnectorInstance,
   setActivePersona,
   setFindingStatusInVault,
-  setHibpApiKey
+  setHibpApiKey,
+  setLastBackupExportAt
 } from '../core/vaultReducer';
+import {
+  backupFreshness,
+  readStorageHealth,
+  requestPersistentStorage,
+  type StorageHealth
+} from '../core/storage';
+import { countLegacyEvidence, upgradeLegacyEvidence } from '../core/maintenance';
 import {
   notificationPermission,
   notificationsSupported,
@@ -174,6 +185,8 @@ export function useUnlinkdApp() {
   });
 
   const [accountsImportStatus, setAccountsImportStatus] = useState<string | null>(null);
+  const [storageHealth, setStorageHealth] = useState<StorageHealth | null>(null);
+  const [legacyEvidenceCount, setLegacyEvidenceCount] = useState(0);
   const [remindersEnabled, setRemindersEnabled] = useState<boolean>(() => notificationPermission() === 'granted');
 
   const persona = vault ? activePersona(vault) : null;
@@ -265,8 +278,22 @@ export function useUnlinkdApp() {
 
     try {
       await saveVault(next, passphrase);
+      // Let peer tabs re-read immediately instead of drifting until they
+      // conflict on their own next write.
+      broadcastVaultChanged();
       return true;
     } catch (caught) {
+      if (caught instanceof VaultConflictError) {
+        // Another tab won the race. Re-read so this tab shows the truth rather
+        // than state that was never written.
+        const reloaded = await loadVault(passphrase);
+        if (reloaded) {
+          setVault(reloaded);
+        }
+        setError(`${caught.message} Your last change was not saved.`);
+        return false;
+      }
+
       const message = caught instanceof Error ? caught.message : 'Unable to persist vault.';
       setError(message);
       return false;
@@ -274,6 +301,7 @@ export function useUnlinkdApp() {
   }
 
   function lockVault(reason?: string): void {
+    resetVaultSyncState();
     setVault(null);
     setIsUnlocked(false);
     setPassphrase('');
@@ -289,6 +317,48 @@ export function useUnlinkdApp() {
   function handleLock(): void {
     lockVault('Vault locked. Your data stays encrypted on this device.');
   }
+
+  // Ask the browser not to evict this origin's storage. Without this, both
+  // localStorage and IndexedDB are best-effort and can be cleared under disk
+  // pressure — which, with no recovery path, means total data loss.
+  useEffect(() => {
+    if (!isUnlocked) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      await requestPersistentStorage();
+      const health = await readStorageHealth();
+      const legacy = await countLegacyEvidence();
+      if (!cancelled) {
+        setStorageHealth(health);
+        setLegacyEvidenceCount(legacy);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isUnlocked]);
+
+  // Re-read the vault when another tab writes it, so both tabs converge instead
+  // of drifting until one of them loses a conflict.
+  useEffect(() => {
+    if (!isUnlocked || !passphrase) {
+      return;
+    }
+
+    return subscribeVaultChanged(() => {
+      void (async () => {
+        const reloaded = await loadVault(passphrase);
+        if (reloaded) {
+          setVault(reloaded);
+          setNotice('Picked up changes made in another tab.');
+        }
+      })();
+    });
+  }, [isUnlocked, passphrase]);
 
   // Auto-lock after inactivity: clears the passphrase and decrypted vault from
   // memory so an unattended machine does not stay exposed indefinitely.
@@ -1215,6 +1285,14 @@ export function useUnlinkdApp() {
     await withBusy(async () => {
       const backup = await exportBackup();
       downloadJsonFile(`unlinkd-backup-${new Date().toISOString().slice(0, 10)}.json`, backup);
+
+      // Record the export so the app can stop nagging (and start again later).
+      if (vault) {
+        const next = setLastBackupExportAt(vault, nowIso());
+        setVault(next);
+        await persist(next);
+      }
+
       await audit('vault_exported', 'backup:export');
     });
   }
@@ -1391,10 +1469,32 @@ export function useUnlinkdApp() {
     setShowOnboarding(false);
   }
 
+  async function handleUpgradeLegacyEvidence(): Promise<void> {
+    if (!passphrase) {
+      return;
+    }
+
+    await withBusy(async () => {
+      setError(null);
+      try {
+        const result = await upgradeLegacyEvidence(passphrase);
+        setLegacyEvidenceCount(await countLegacyEvidence());
+        setNotice(
+          result.failed > 0
+            ? `Re-encrypted ${String(result.upgraded)} evidence file(s); ${String(result.failed)} could not be read with this passphrase.`
+            : `Re-encrypted ${String(result.upgraded)} evidence file(s) under the current key derivation.`
+        );
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : 'Unable to re-encrypt evidence.');
+      }
+    });
+  }
+
   const connectorInstances = vault && persona
     ? vault.connectorInstances.filter((item) => item.personaId === persona.id)
     : [];
   const due = dueConnectorInstances(connectorInstances);
+  const backupStatus = backupFreshness(vault?.settings.lastBackupExportAt);
 
   return {
     // state
@@ -1423,6 +1523,9 @@ export function useUnlinkdApp() {
     manualSuggestions,
     connectorInstances,
     due,
+    backupStatus,
+    storageHealth,
+    legacyEvidenceCount,
     remindersEnabled,
     remindersSupported: notificationsSupported(),
     // handlers
@@ -1459,6 +1562,7 @@ export function useUnlinkdApp() {
     handleExportReport,
     handleExportBackup,
     handleImportBackup,
+    handleUpgradeLegacyEvidence,
     handleWipeAllData
   };
 }

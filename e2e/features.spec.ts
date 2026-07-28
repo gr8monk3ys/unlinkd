@@ -112,3 +112,64 @@ test('exports and re-imports an encrypted backup', async ({ page }) => {
   expect(backup.version).toBe(1);
   expect(typeof backup.vaultCiphertext).toBe('string');
 });
+
+test('locks the vault and requires the passphrase again', async ({ page }) => {
+  await createVault(page);
+
+  await page.getByRole('button', { name: 'Lock' }).click();
+
+  // Back to the unlock screen, with the passphrase cleared from the field.
+  await expect(page.getByRole('heading', { name: 'Unlock' })).toBeVisible();
+  await expect(page.getByText(/Vault locked/)).toBeVisible();
+  await expect(page.getByLabel('Passphrase', { exact: true })).toHaveValue('');
+  await expect(page.getByText('Persona: Default')).toBeHidden();
+
+  // The vault still opens with the correct passphrase.
+  await page.getByLabel('Passphrase', { exact: true }).fill(STRONG);
+  await page.getByRole('button', { name: 'Unlock Storage' }).click();
+  await expect(page.getByText('Persona: Default')).toBeVisible();
+});
+
+test('warns that no backup exists, then clears the warning after exporting', async ({ page }) => {
+  await createVault(page);
+
+  // A brand-new vault has never been exported, so the dashboard should say so.
+  await switchToTab(page, 'Dashboard');
+  await expect(page.getByRole('heading', { name: /No backup yet/ })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Go to Backup' }).click();
+  await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Export Backup (Encrypted)' }).click()
+  ]);
+  await expect(page.getByText('Last backup: today.')).toBeVisible();
+
+  // The dashboard warning is gone now that a backup is on record.
+  await switchToTab(page, 'Dashboard');
+  await expect(page.getByRole('heading', { name: /No backup yet/ })).toBeHidden();
+});
+
+test('attaches note evidence to a connector and lists it', async ({ page }) => {
+  await createVault(page);
+
+  await switchToTab(page, 'Connectors');
+  const catalogRow = page
+    .getByRole('listitem')
+    .filter({ hasText: 'Whitepages' })
+    .first();
+  await catalogRow.getByRole('button', { name: 'Add To Persona' }).click();
+  await expectAuditEntries(page, 1);
+
+  await switchToTab(page, 'Connectors');
+  await page.getByRole('button', { name: /Whitepages/ }).first().click();
+
+  // Switch the evidence form to a note and attach one.
+  await page.getByLabel('Kind').selectOption('note');
+  await page.getByLabel('Label').fill('opt-out receipt');
+  await page.getByLabel('Note').fill('Submitted the removal request on this date.');
+  await page.getByRole('button', { name: 'Add Note Evidence' }).click();
+
+  await expect(page.getByRole('button', { name: /Download: opt-out_receipt/ })).toBeVisible();
+  await expect(page.getByText('(opt-out receipt)')).toBeVisible();
+  await expectAuditEntries(page, 2);
+});

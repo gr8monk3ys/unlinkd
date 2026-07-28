@@ -46,8 +46,9 @@ export function UnlockScreen({
         </h1>
       </header>
       <p className="tagline">
-        Shrink your online footprint, one severed link at a time. Map your exposure, work through
-        removal checklists, and keep encrypted proof — everything stays on this device.
+        Get yourself removed from the internet — and keep the proof. Work through opt-out
+        checklists, capture encrypted evidence of every request, and keep a tamper-evident record
+        of what you asked and when. Everything stays on this device.
       </p>
 
       {notice ? <p role="status">{notice}</p> : null}
