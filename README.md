@@ -1,5 +1,9 @@
 # unlinkd
 
+<p align="center">
+  <img src="docs/assets/hero.png" alt="unlinkd preview" width="640">
+</p>
+
 A local-first MVP for personal digital disappearance workflows and OSINT self-scan tooling.
 
 It runs entirely in the browser: all data (personas, identifiers, accounts,
