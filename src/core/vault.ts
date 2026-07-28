@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { decryptJson, encryptJson } from './crypto';
+import { decryptJson, encryptJson, needsKdfUpgrade } from './crypto';
 import type { Account, ConnectorInstance, Identifier, Persona, RiskFinding } from './types';
 import { isRecord, nowIso } from './utils';
 
@@ -8,6 +8,8 @@ const vaultStorageKey = 'unlinkd.vault.v1';
 export interface VaultSettings {
   /** Optional Have I Been Pwned API key, stored encrypted in the vault. */
   hibpApiKey?: string;
+  /** ISO timestamp of the last encrypted backup export, for staleness nudges. */
+  lastBackupExportAt?: string;
 }
 
 export interface VaultStateV1 {
@@ -90,7 +92,8 @@ const findingSchema = z.object({
 
 const settingsSchema = z
   .object({
-    hibpApiKey: z.string().optional()
+    hibpApiKey: z.string().optional(),
+    lastBackupExportAt: z.string().optional()
   })
   .optional();
 
@@ -192,6 +195,32 @@ function writeRawVault(value: string): void {
   }
 }
 
+/**
+ * The exact ciphertext this tab last read or wrote. Used as a compare-and-swap
+ * token: if what is in storage no longer matches, another tab wrote in the
+ * meantime and blindly overwriting would destroy its work.
+ */
+let lastKnownRaw: string | null = null;
+
+/** Raised when a vault write would clobber another tab's changes. */
+export class VaultConflictError extends Error {
+  constructor() {
+    super(
+      'Another tab changed this vault since it was loaded here. Reload the page to pick up those changes before saving again.'
+    );
+    this.name = 'VaultConflictError';
+  }
+}
+
+/**
+ * Forget the compare-and-swap token. Call after wiping, locking, or restoring a
+ * backup — situations where this tab intentionally no longer tracks a prior
+ * ciphertext and the next write should be unconditional.
+ */
+export function resetVaultSyncState(): void {
+  lastKnownRaw = null;
+}
+
 export async function loadVault(passphrase: string): Promise<VaultStateV1 | null> {
   const raw = readRawVault();
   if (!raw) {
@@ -215,31 +244,70 @@ export async function loadVault(passphrase: string): Promise<VaultStateV1 | null
     return null;
   }
 
+  // Anchor the compare-and-swap token to exactly what we just read.
+  lastKnownRaw = raw;
+
   const normalized = normalizeVault(validated.data);
 
-  // Keep storage normalized after migrations.
-  if (JSON.stringify(normalized) !== JSON.stringify(validated.data)) {
+  // Keep storage normalized after migrations, and proactively re-encrypt
+  // envelopes still written with a pre-scrypt KDF so data at rest does not
+  // stay under a weaker derivation any longer than necessary.
+  if (needsKdfUpgrade(parsed) || JSON.stringify(normalized) !== JSON.stringify(validated.data)) {
     await saveVault(normalized, passphrase);
   }
 
   return normalized;
 }
 
-export async function saveVault(state: VaultStateV1, passphrase: string): Promise<void> {
+/**
+ * Returns true if `value` (a decrypted plaintext) parses as a v1 vault. Backup
+ * import uses this to guarantee the ciphertext it is about to install actually
+ * contains a vault — a decryptable-but-wrong payload would otherwise brick the
+ * app after import.
+ */
+export function isVaultPlaintext(value: unknown): boolean {
+  return vaultSchemaV1.safeParse(value).success;
+}
+
+export interface SaveVaultOptions {
+  /**
+   * Skip the cross-tab conflict check. Only for writes that intentionally
+   * replace whatever is stored (backup restore, first create).
+   */
+  force?: boolean;
+}
+
+export async function saveVault(
+  state: VaultStateV1,
+  passphrase: string,
+  options?: SaveVaultOptions
+): Promise<void> {
   const payload: VaultStateV1 = {
     ...state,
     savedAt: nowIso()
   };
 
   const encrypted = await encryptJson(payload, passphrase);
-  writeRawVault(JSON.stringify(encrypted));
+  const next = JSON.stringify(encrypted);
+
+  // Compare-and-swap. This read/compare/write runs to completion without an
+  // await, so within a tab it is atomic; across tabs, localStorage writes are
+  // serialized by the browser, so a losing writer always observes the winner's
+  // ciphertext here rather than silently overwriting it.
+  const current = readRawVault();
+  if (!options?.force && lastKnownRaw !== null && current !== lastKnownRaw) {
+    throw new VaultConflictError();
+  }
+
+  writeRawVault(next);
+  lastKnownRaw = next;
 }
 
 export async function unlockVault(passphrase: string): Promise<VaultStateV1 | null> {
   const existing = readRawVault();
   if (!existing) {
     const empty = createEmptyVault();
-    await saveVault(empty, passphrase);
+    await saveVault(empty, passphrase, { force: true });
     return empty;
   }
 
@@ -273,6 +341,7 @@ export function setRawVaultCiphertext(value: string): void {
   }
 
   writeRawVault(value);
+  lastKnownRaw = value;
 }
 
 export function clearVaultCiphertext(): void {
@@ -281,4 +350,5 @@ export function clearVaultCiphertext(): void {
   } catch {
     // ignore
   }
+  lastKnownRaw = null;
 }

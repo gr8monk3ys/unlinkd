@@ -3,7 +3,8 @@ import type { ManualCheckSuggestion } from '../../core/hibp';
 
 export interface SettingsTabProps {
   hibpApiKey: string;
-  onSaveHibpApiKey: (key: string) => void;
+  /** Resolves true only when the key was actually persisted to the vault. */
+  onSaveHibpApiKey: (key: string) => Promise<boolean>;
   /** Returns the number of times the password appeared in breaches, or null on error. */
   onCheckPassword: (password: string) => Promise<number | null>;
   manualSuggestions: ManualCheckSuggestion[];
@@ -16,7 +17,7 @@ export function SettingsTab({
   manualSuggestions
 }: SettingsTabProps): React.JSX.Element {
   const [apiKeyInput, setApiKeyInput] = useState(hibpApiKey);
-  const [apiKeySaved, setApiKeySaved] = useState(false);
+  const [apiKeySaved, setApiKeySaved] = useState<'saved' | 'failed' | null>(null);
 
   const [password, setPassword] = useState('');
   const [checking, setChecking] = useState(false);
@@ -24,9 +25,10 @@ export function SettingsTab({
   const [checkError, setCheckError] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
 
-  function handleSaveApiKey(): void {
-    onSaveHibpApiKey(apiKeyInput.trim());
-    setApiKeySaved(true);
+  async function handleSaveApiKey(): Promise<void> {
+    setApiKeySaved(null);
+    const saved = await onSaveHibpApiKey(apiKeyInput.trim());
+    setApiKeySaved(saved ? 'saved' : 'failed');
   }
 
   async function handleCheckPassword(): Promise<void> {
@@ -72,13 +74,16 @@ export function SettingsTab({
           placeholder="hibp-api-key"
           onChange={(event) => {
             setApiKeyInput(event.target.value);
-            setApiKeySaved(false);
+            setApiKeySaved(null);
           }}
         />
-        <button type="button" onClick={handleSaveApiKey}>
+        <button type="button" onClick={() => void handleSaveApiKey()}>
           Save API Key
         </button>
-        {apiKeySaved ? <p role="status">API key saved to vault.</p> : null}
+        {apiKeySaved === 'saved' ? <p role="status">API key saved to vault.</p> : null}
+        {apiKeySaved === 'failed' ? (
+          <p role="alert">The API key was not saved — see the error above and try again.</p>
+        ) : null}
       </section>
 
       <section aria-labelledby="password-check-heading">

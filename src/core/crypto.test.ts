@@ -37,6 +37,27 @@ describe('crypto', () => {
       expect(result).toBeNull();
     });
 
+    it('rejects envelopes declaring absurd scrypt cost parameters', async () => {
+      const encrypted = await encryptJson({ hello: 'world' }, 'passphrase');
+
+      // A hostile envelope must not be able to peg the tab with huge work
+      // factors; the parser refuses out-of-bounds or non-power-of-two costs.
+      expect(isEncryptedPayload({ ...encrypted, n: 2 ** 23 })).toBe(false);
+      expect(isEncryptedPayload({ ...encrypted, n: 300 })).toBe(false);
+      expect(isEncryptedPayload({ ...encrypted, r: 1024 })).toBe(false);
+      expect(isEncryptedPayload({ ...encrypted, p: 500 })).toBe(false);
+      expect(await decryptJson({ ...encrypted, p: 500 }, 'passphrase')).toBeNull();
+    });
+
+    it('derives the same key for composed and decomposed Unicode passphrases', async () => {
+      const nfc = 'caf\u00e9-vault'; // e-acute as one composed codepoint
+      const nfd = 'cafe\u0301-vault'; // e + combining acute accent
+      expect(nfc).not.toBe(nfd);
+
+      const encrypted = await encryptJson({ hello: 'world' }, nfc);
+      expect(await decryptJson(encrypted, nfd)).toEqual({ hello: 'world' });
+    });
+
     it('produces v2 format with memory-hard scrypt metadata', async () => {
       const encrypted = await encryptJson('test', 'pass');
 

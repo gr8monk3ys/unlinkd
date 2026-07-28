@@ -6,6 +6,7 @@ import type {
   RiskFinding
 } from '../../core/types';
 import { connectorName } from '../../core/connectors';
+import type { BackupFreshness } from '../../core/storage';
 import { ExposureGraph } from '../ExposureGraph';
 import { ProgressOverview } from '../ProgressOverview';
 
@@ -27,6 +28,8 @@ export interface DashboardTabProps {
   connectorInstances?: ConnectorInstance[];
   findings?: RiskFinding[];
   personaName?: string;
+  backupStatus?: BackupFreshness;
+  onGoToBackup?: () => void;
 }
 
 function fmtDue(value: string | undefined): string {
@@ -53,12 +56,35 @@ export function DashboardTab(props: DashboardTabProps): React.JSX.Element {
     exposureEdges,
     connectorInstances,
     findings,
-    personaName
+    personaName,
+    backupStatus,
+    onGoToBackup
   } = props;
 
   return (
     <section>
       <h2>Dashboard</h2>
+
+      {backupStatus?.overdue ? (
+        <section
+          aria-labelledby="backup-due-heading"
+          style={{ border: '1px solid #b45309', borderRadius: '6px', padding: '12px', marginBottom: '16px' }}
+        >
+          <h3 id="backup-due-heading" style={{ marginTop: 0 }}>
+            {backupStatus.never ? '⚠ No backup yet' : '⚠ Backup is out of date'}
+          </h3>
+          <p>
+            {backupStatus.never
+              ? 'Nothing here can be recovered if this browser’s storage is cleared. Export an encrypted backup.'
+              : `Your last backup was ${String(backupStatus.ageDays)} days ago. Anything added since then would be lost.`}
+          </p>
+          {onGoToBackup ? (
+            <button type="button" className="btn-primary" onClick={onGoToBackup}>
+              Go to Backup
+            </button>
+          ) : null}
+        </section>
+      ) : null}
 
       {dueConnectors.length > 0 ? (
         <section

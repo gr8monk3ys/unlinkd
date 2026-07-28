@@ -1,7 +1,7 @@
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { hmac } from '@noble/hashes/hmac.js';
 import { sha256 } from '@noble/hashes/sha2.js';
-import { decryptJson, encryptJson } from './crypto';
+import { decryptJson, encryptJson, passphraseBytes } from './crypto';
 import { isRecord } from './utils';
 
 export const auditActions = [
@@ -53,7 +53,9 @@ interface AuditEnvelope {
 }
 
 function deriveAuditMacKey(passphrase: string): Uint8Array {
-  return hkdf(sha256, encoder.encode(passphrase), AUDIT_MAC_SALT, AUDIT_MAC_INFO, 32);
+  // NFC-normalized (see passphraseBytes) so the MAC key matches the vault key
+  // derivation for the same visual passphrase across OS/IME encodings.
+  return hkdf(sha256, passphraseBytes(passphrase), AUDIT_MAC_SALT, AUDIT_MAC_INFO, 32);
 }
 
 function toHex(bytes: Uint8Array): string {
@@ -104,13 +106,16 @@ function isAuditEnvelope(value: unknown): value is AuditEnvelope {
   return value.version === 1 && isAuditRecordArray(value.records);
 }
 
-async function readAuditEnvelope(passphrase: string): Promise<AuditEnvelope | null> {
-  let raw: string | null = null;
+function readRawAudit(): string | null {
   try {
-    raw = localStorage.getItem(auditStorageKey);
+    return localStorage.getItem(auditStorageKey);
   } catch {
     return null;
   }
+}
+
+async function readAuditEnvelope(passphrase: string): Promise<AuditEnvelope | null> {
+  const raw = readRawAudit();
 
   if (!raw) {
     return { version: 1, records: [] };
@@ -139,15 +144,8 @@ async function readAuditEnvelope(passphrase: string): Promise<AuditEnvelope | nu
   return isAuditEnvelope(decrypted) ? decrypted : null;
 }
 
-async function writeAuditEnvelope(envelope: AuditEnvelope, passphrase: string): Promise<boolean> {
-  const encrypted = await encryptJson(envelope, passphrase);
-  try {
-    localStorage.setItem(auditStorageKey, JSON.stringify(encrypted));
-    return true;
-  } catch {
-    return false;
-  }
-}
+/** How many times an append re-reads and rebuilds after losing a cross-tab race. */
+const APPEND_MAX_ATTEMPTS = 3;
 
 export async function loadAuditRecords(passphrase: string): Promise<AuditRecord[] | null> {
   const envelope = await readAuditEnvelope(passphrase);
@@ -159,30 +157,51 @@ export async function appendAuditRecord(
   details: string,
   passphrase: string
 ): Promise<AuditRecord | null> {
-  const envelope = await readAuditEnvelope(passphrase);
-  if (!envelope) {
-    return null;
+  // The log is an append-only chain stored as one blob, so a concurrent append
+  // in another tab would otherwise be silently dropped (and the shortened chain
+  // would still verify). Detect the race and rebuild the record on top of the
+  // winner's chain instead of clobbering it.
+  for (let attempt = 0; attempt < APPEND_MAX_ATTEMPTS; attempt += 1) {
+    const rawBefore = readRawAudit();
+    const envelope = await readAuditEnvelope(passphrase);
+    if (!envelope) {
+      return null;
+    }
+
+    const previousHash =
+      envelope.records.length > 0 ? envelope.records[envelope.records.length - 1]?.hash ?? null : null;
+    const timestamp = new Date().toISOString();
+    const id = crypto.randomUUID();
+    const macKey = deriveAuditMacKey(passphrase);
+    const hash = computeRecordMac(macKey, { id, action, details, timestamp, previousHash });
+
+    const record: AuditRecord = {
+      id,
+      action,
+      details,
+      timestamp,
+      previousHash,
+      hash
+    };
+
+    const next: AuditEnvelope = { version: 1, records: [...envelope.records, record] };
+    // Encrypt BEFORE the conflict check so the compare and the write are
+    // adjacent and synchronous — no await can interleave between them.
+    const encrypted = await encryptJson(next, passphrase);
+
+    if (readRawAudit() !== rawBefore) {
+      continue; // Another tab appended; rebuild on top of its chain.
+    }
+
+    try {
+      localStorage.setItem(auditStorageKey, JSON.stringify(encrypted));
+    } catch {
+      return null;
+    }
+    return record;
   }
 
-  const previousHash =
-    envelope.records.length > 0 ? envelope.records[envelope.records.length - 1]?.hash ?? null : null;
-  const timestamp = new Date().toISOString();
-  const id = crypto.randomUUID();
-  const macKey = deriveAuditMacKey(passphrase);
-  const hash = computeRecordMac(macKey, { id, action, details, timestamp, previousHash });
-
-  const record: AuditRecord = {
-    id,
-    action,
-    details,
-    timestamp,
-    previousHash,
-    hash
-  };
-
-  const next: AuditEnvelope = { version: 1, records: [...envelope.records, record] };
-  const ok = await writeAuditEnvelope(next, passphrase);
-  return ok ? record : null;
+  return null;
 }
 
 export async function verifyAuditChain(passphrase: string): Promise<boolean> {
