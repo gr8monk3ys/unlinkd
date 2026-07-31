@@ -63,8 +63,11 @@ export function buildMarkdownReport(vault: VaultStateV1, options: ReportOptions)
     due
       .sort((a, b) => (a.nextCheckAt ?? '').localeCompare(b.nextCheckAt ?? ''))
       .forEach((instance) => {
+        // Persona names are user-chosen and can be identifying — omit them in
+        // redacted mode.
+        const persona = options.redacted ? '' : ` (${personaName(instance.personaId, vault.personas)})`;
         lines.push(
-          `- ${connectorName(instance.connectorId, options.connectorCatalog)} (${personaName(instance.personaId, vault.personas)}): next check ${fmtDate(
+          `- ${connectorName(instance.connectorId, options.connectorCatalog)}${persona}: next check ${fmtDate(
             instance.nextCheckAt ?? 'unknown'
           )}`
         );
@@ -78,8 +81,15 @@ export function buildMarkdownReport(vault: VaultStateV1, options: ReportOptions)
     lines.push('- (none)');
   } else {
     top.forEach((finding) => {
-      const persona = finding.personaId ? personaName(finding.personaId, vault.personas) : 'All';
-      lines.push(`- [${finding.tier}] score=${scoreFinding(finding)} persona=${persona} title=${finding.title}`);
+      // Finding titles embed masked emails (with domains), service names, and
+      // breach names — all identifying. A redacted report keeps only tier and
+      // score so posture can be shared without exposing whose posture it is.
+      if (options.redacted) {
+        lines.push(`- [${finding.tier}] score=${scoreFinding(finding)} title=[redacted — see full report]`);
+      } else {
+        const persona = finding.personaId ? personaName(finding.personaId, vault.personas) : 'All';
+        lines.push(`- [${finding.tier}] score=${scoreFinding(finding)} persona=${persona} title=${finding.title}`);
+      }
     });
   }
   lines.push('');

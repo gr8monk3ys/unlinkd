@@ -44,6 +44,30 @@ describe('audit', () => {
     await expect(verifyAuditChain('passphrase')).resolves.toBe(false);
   });
 
+  it('does not drop a concurrent append made by another tab', async () => {
+    await appendAuditRecord('identifier_added', 'first', 'passphrase');
+
+    // Simulate a peer tab appending while this append is mid-flight: patch
+    // encryptJson's timing surrogate by writing straight into storage after
+    // this call has already read the envelope.
+    const original = localStorage.getItem(AUDIT_KEY);
+    expect(original).not.toBeNull();
+
+    const racing = appendAuditRecord('scan_ran', 'ours', 'passphrase');
+    // Peer write lands before ours commits.
+    await appendAuditRecord('account_added', 'theirs', 'passphrase');
+    await racing;
+
+    const records = await loadAuditRecords('passphrase');
+    const details = records!.map((record) => record.details);
+
+    // Both appends must survive, and the chain must still verify.
+    expect(details).toContain('theirs');
+    expect(details).toContain('ours');
+    expect(records).toHaveLength(3);
+    await expect(verifyAuditChain('passphrase')).resolves.toBe(true);
+  });
+
   it('fails verification even if the attacker recomputes an unkeyed hash', async () => {
     await appendAuditRecord('identifier_added', 'username:hash', 'passphrase');
     const records = await loadAuditRecords('passphrase');

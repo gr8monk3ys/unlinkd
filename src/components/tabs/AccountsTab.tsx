@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Account, AccountStatus } from '../../core/types';
+import { sanitizeHttpUrl } from '../useUnlinkdApp';
 
 const accountStatuses: AccountStatus[] = ['active', 'unused', 'removed', 'unknown'];
 
@@ -87,6 +88,8 @@ export function AccountsTab({
           accept=".csv,text/csv"
           onChange={(event) => {
             const file = event.target.files?.[0] ?? null;
+            // Reset so selecting the same file again re-fires the change event.
+            event.target.value = '';
             if (file) {
               onImportAccounts(file);
             }
@@ -104,6 +107,7 @@ export function AccountsTab({
           accept=".mbox,text/plain"
           onChange={(event) => {
             const file = event.target.files?.[0] ?? null;
+            event.target.value = '';
             if (file) {
               onImportMailbox(file);
             }
@@ -119,11 +123,16 @@ export function AccountsTab({
             <span>{` @ ${account.username}`}</span>
             <span>{` (${account.status})`}</span>
             {account.lastSeenAt ? <span>{` last seen ${account.lastSeenAt}`}</span> : null}
-            {account.url ? (
-              <a href={account.url} target="_blank" rel="noreferrer">
-                Open
-              </a>
-            ) : null}
+            {(() => {
+              // Defense in depth: even if a non-http(s) URL reached the vault
+              // (e.g. via an old import), never render it as a clickable link.
+              const safeUrl = account.url ? sanitizeHttpUrl(account.url) : null;
+              return safeUrl ? (
+                <a href={safeUrl} target="_blank" rel="noreferrer noopener">
+                  Open
+                </a>
+              ) : null;
+            })()}
           </li>
         ))}
       </ul>

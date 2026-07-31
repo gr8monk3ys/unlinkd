@@ -88,3 +88,9 @@ export function setHibpApiKey(vault: VaultStateV1, key: string): VaultStateV1 {
   const settings: VaultSettings = { ...vault.settings, hibpApiKey: trimmed.length > 0 ? trimmed : undefined };
   return { ...vault, settings };
 }
+
+/** Record that an encrypted backup was exported, for staleness reminders. */
+export function setLastBackupExportAt(vault: VaultStateV1, iso: string): VaultStateV1 {
+  const settings: VaultSettings = { ...vault.settings, lastBackupExportAt: iso };
+  return { ...vault, settings };
+}
