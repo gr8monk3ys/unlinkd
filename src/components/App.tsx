@@ -149,6 +149,8 @@ export function App(): React.JSX.Element {
           personaName={persona.name}
           backupStatus={app.backupStatus}
           onGoToBackup={() => setTab('backup')}
+          requestsNeedingAttention={app.requestsAttention}
+          onGoToConnectors={() => setTab('connectors')}
         />
         </div>
       ) : null}
@@ -201,6 +203,8 @@ export function App(): React.JSX.Element {
           onDeleteEvidence={(id, evidenceId) => void app.handleDeleteEvidence(id, evidenceId)}
           onUploadEvidence={app.handleUploadEvidence}
           onDownloadEvidence={(meta) => void app.handleDownloadEvidence(meta)}
+          onRecordRequest={app.handleRecordRequest}
+          onRecordResponse={app.handleRecordResponse}
         />
         </div>
       ) : null}

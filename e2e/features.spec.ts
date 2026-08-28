@@ -173,3 +173,58 @@ test('attaches note evidence to a connector and lists it', async ({ page }) => {
   await expect(page.getByText('(opt-out receipt)')).toBeVisible();
   await expectAuditEntries(page, 2);
 });
+
+test('records a removal request and surfaces it on the dashboard once overdue', async ({ page }) => {
+  await createVault(page);
+
+  await switchToTab(page, 'Connectors');
+  await page
+    .getByRole('listitem')
+    .filter({ hasText: 'Whitepages' })
+    .first()
+    .getByRole('button', { name: 'Add To Persona' })
+    .click();
+
+  await page.getByRole('button', { name: /Whitepages/ }).first().click();
+
+  // A GDPR erasure request sent well over a month ago is unambiguously late.
+  await page.getByLabel('Regime').selectOption('gdpr');
+  await page.getByLabel('Legal basis').selectOption('gdpr.art17');
+  await page.getByLabel('Sent via').selectOption('email');
+  await page.getByLabel('Date sent').fill('2020-01-15');
+  await page.getByLabel('Sent to (optional)').fill('privacy@example.com');
+  await page.getByRole('button', { name: 'Record request' }).click();
+
+  await expect(page.getByText(/Past deadline/)).toBeVisible();
+
+  await switchToTab(page, 'Dashboard');
+  await expect(
+    page.getByRole('heading', { name: /request is past the legal deadline/i })
+  ).toBeVisible();
+  // The citation and the arithmetic both travel with the deadline.
+  await expect(page.getByText(/GDPR Art\. 17/).first()).toBeVisible();
+  await expect(page.getByText(/not legal advice/i)).toBeVisible();
+});
+
+test('a recorded reply stops the deadline clock', async ({ page }) => {
+  await createVault(page);
+
+  await switchToTab(page, 'Connectors');
+  await page
+    .getByRole('listitem')
+    .filter({ hasText: 'Whitepages' })
+    .first()
+    .getByRole('button', { name: 'Add To Persona' })
+    .click();
+  await page.getByRole('button', { name: /Whitepages/ }).first().click();
+
+  await page.getByLabel('Date sent').fill('2020-01-15');
+  await page.getByRole('button', { name: 'Record request' }).click();
+  await expect(page.getByText(/Past deadline/)).toBeVisible();
+
+  await page.getByLabel('Record reply').selectOption('completed');
+
+  await expect(page.getByText(/Closed/)).toBeVisible();
+  await switchToTab(page, 'Dashboard');
+  await expect(page.getByRole('heading', { name: /past the legal deadline/i })).toBeHidden();
+});

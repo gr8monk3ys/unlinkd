@@ -44,6 +44,8 @@ import {
   type ConnectorCatalogMeta
 } from '../connectors/catalog';
 import { dueConnectorInstances } from '../core/connectors';
+import { requestsNeedingAttention } from '../core/compliance/deadlines';
+import { useRemovalRequests } from './useRemovalRequests';
 import {
   addAccount,
   addConnectorInstance,
@@ -1496,6 +1498,12 @@ export function useUnlinkdApp() {
   const due = dueConnectorInstances(connectorInstances);
   const backupStatus = backupFreshness(vault?.settings.lastBackupExportAt);
 
+  const removalRequests = useRemovalRequests({ vault, setVault, persist, audit, withBusy, setError });
+  // Scoped to the active persona, like every other derived list here.
+  const requestsAttention = vault
+    ? requestsNeedingAttention({ ...vault, connectorInstances })
+    : [];
+
   return {
     // state
     tab,
@@ -1563,6 +1571,9 @@ export function useUnlinkdApp() {
     handleExportBackup,
     handleImportBackup,
     handleUpgradeLegacyEvidence,
-    handleWipeAllData
+    handleWipeAllData,
+    // removal requests
+    requestsAttention,
+    ...removalRequests
   };
 }
