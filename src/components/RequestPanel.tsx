@@ -5,6 +5,7 @@ import { COMPLIANCE_PROFILES } from '../core/compliance/profiles';
 import {
   instanceRequests,
   requestChannelLabels,
+  requestOutcomeGuidance,
   requestOutcomeLabels,
   type NewRequestInput
 } from '../core/compliance/requests';
@@ -90,6 +91,11 @@ export function RequestPanel(props: RequestPanelProps): React.JSX.Element {
                       <li key={response.id}>
                         {`${response.receivedAt.slice(0, 10)}: ${requestOutcomeLabels[response.outcome]}`}
                         {response.extensionClaimed ? ' (extension claimed)' : ''}
+                        {requestOutcomeGuidance[response.outcome] ? (
+                          <p style={{ margin: '2px 0', opacity: 0.85 }} role="note">
+                            {requestOutcomeGuidance[response.outcome]}
+                          </p>
+                        ) : null}
                       </li>
                     ))}
                   </ul>

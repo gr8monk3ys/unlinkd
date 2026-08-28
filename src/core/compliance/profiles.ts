@@ -146,7 +146,48 @@ export const CA_DROP_PROFILE: ComplianceProfile = {
   ]
 };
 
-export const COMPLIANCE_PROFILES: ComplianceProfile[] = [GDPR_PROFILE, CCPA_PROFILE, CA_DROP_PROFILE];
+/**
+ * The common shape of a US state deletion right, for the ~20 states with a
+ * comprehensive privacy law in effect but no central portal.
+ *
+ * Deliberately generic. Modelling each state separately would mean twenty
+ * profiles that nobody re-verifies, and a confidently wrong citation is worse
+ * than an openly approximate one — so this says plainly that it is the common
+ * pattern and asks the user to confirm their own statute. The per-request
+ * deadline override exists for exactly this case.
+ */
+export const US_STATE_PROFILE: ComplianceProfile = {
+  id: 'us_state',
+  name: 'US state privacy law (generic — confirm your state)',
+  jurisdictions: ['US'],
+  lastReviewed: '2026-08-28',
+  sourceUrl: 'https://iapp.org/resources/article/us-state-privacy-legislation-tracker/',
+  bases: [
+    {
+      id: 'us_state.delete',
+      label: 'Deletion of personal data',
+      citation:
+        'Common pattern across state comprehensive privacy laws — confirm your own state statute before relying on this date',
+      responseWindow: { value: 45, unit: 'days' },
+      extensionWindow: { value: 45, unit: 'days' },
+      extensionNote:
+        'Most state laws allow one further 45-day extension where reasonably necessary, with notice inside the first 45.'
+    },
+    {
+      id: 'us_state.optout',
+      label: 'Opt out of sale or targeted advertising',
+      citation: 'Common pattern across state comprehensive privacy laws — confirm your own state statute',
+      responseWindow: { value: 45, unit: 'days' }
+    }
+  ]
+};
+
+export const COMPLIANCE_PROFILES: ComplianceProfile[] = [
+  GDPR_PROFILE,
+  CCPA_PROFILE,
+  CA_DROP_PROFILE,
+  US_STATE_PROFILE
+];
 
 export function findProfile(profileId: string, profiles = COMPLIANCE_PROFILES): ComplianceProfile | null {
   return profiles.find((profile) => profile.id === profileId) ?? null;

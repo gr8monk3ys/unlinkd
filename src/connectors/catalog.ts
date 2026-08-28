@@ -38,7 +38,7 @@ export const builtinConnectorCatalog: ConnectorDefinition[] = [
         id: 'submit',
         type: 'manual',
         title: 'Submit the deletion request at privacy.ca.gov',
-        instructions: 'Go to privacy.ca.gov and open the Delete Request and Opt-out Platform. Create a profile, complete the state\'s residency verification, and choose how much identifying information to share — you control how much you provide, and more information helps brokers match your records. Submit the deletion request. Capture the confirmation screen.',
+        instructions: 'Go to privacy.ca.gov/drop/ and open the Delete Request and Opt-out Platform. Create a profile, complete the state\'s residency verification, and choose how much identifying information to share — you control how much you provide, and more information helps brokers match your records. Submit the deletion request and capture the confirmation screen.',
         evidenceHint: 'Screenshot of the submission confirmation'
       },
       {
@@ -59,8 +59,15 @@ export const builtinConnectorCatalog: ConnectorDefinition[] = [
         id: 'recheck',
         type: 'manual',
         title: 'Re-check on the next cycle',
-        instructions: 'Deletion is an ongoing obligation: a broker that re-acquires your data must delete it again on the following cycle. Re-check status roughly every 45 days and capture fresh evidence when anything changes.',
+        instructions: 'Deletion is an ongoing obligation, not a one-off. Registered brokers must maintain suppression lists so your details are not simply re-collected, and a broker that does re-acquire your data must delete it again on the following cycle. Re-check status roughly every 45 days and capture fresh evidence whenever a broker reappears — a reappearance after a confirmed deletion is itself reportable.',
         evidenceHint: 'Dated status screenshot'
+      },
+      {
+        id: 'escalate',
+        type: 'manual',
+        title: 'Report a broker that ignores the deadline',
+        instructions: 'If a broker has not acted once the window has passed, the CPPA enforces the Delete Act at $200 per request per day. Export a report from unlinkd covering this request\'s timeline and evidence, and file a complaint with the CPPA. Independent testing in 2026 found a meaningful fraction of registered brokers never respond at all, so a dated record of silence is worth keeping.',
+        evidenceHint: 'Complaint reference and the dated status evidence'
       }
     ]
   },

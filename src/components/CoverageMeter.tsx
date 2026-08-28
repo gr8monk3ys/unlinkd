@@ -1,4 +1,5 @@
 import type { CoverageSummary } from '../core/coverage';
+import { STATE_REGISTRIES } from '../core/coverage';
 
 export interface CoverageMeterProps {
   summary: CoverageSummary;
@@ -41,6 +42,22 @@ export function CoverageMeter(props: CoverageMeterProps): React.JSX.Element {
           {onOpenConnectors ? ' Add the California DROP connector to track it here.' : ''}
         </p>
       ) : null}
+
+      <details style={{ fontSize: '0.85em', marginBottom: '8px' }}>
+        <summary>Where else brokers must register</summary>
+        <ul>
+          {STATE_REGISTRIES.map((registry) => (
+            <li key={registry.jurisdiction}>
+              <strong>{registry.name}</strong>
+              {` — ${registry.note}`}
+            </li>
+          ))}
+        </ul>
+        <p style={{ margin: '4px 0' }}>
+          Outside these states, and across the EU and UK, there is no central platform: deletion is one request per
+          operator. A registry is not the same as a remedy.
+        </p>
+      </details>
 
       <p style={{ fontSize: '0.85em', opacity: 0.85 }}>
         {`Denominator: ${universe.registryName}, ${String(universe.registeredBrokersAtLeast)}+ registered as of ${universe.asOf}. `}

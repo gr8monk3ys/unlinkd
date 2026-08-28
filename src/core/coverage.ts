@@ -29,6 +29,63 @@ export const CA_BROKER_REGISTRY: BrokerUniverse = {
   asOf: '2026-08-28'
 };
 
+/**
+ * Where else a broker must publicly register, and whether that registry comes
+ * with a lever the consumer can actually pull.
+ *
+ * Only California pairs a registry with a central deletion portal. Texas and
+ * Oregon give a deletion right but leave the consumer to contact each broker.
+ * Vermont publishes who is operating and stops there — worth saying out loud,
+ * because a registry is easily mistaken for a remedy.
+ */
+export interface StateRegistry {
+  jurisdiction: string;
+  name: string;
+  /** A single request that reaches every registered broker. */
+  centralDeletionPortal: boolean;
+  /** A statutory deletion right, however it must be exercised. */
+  deletionRight: boolean;
+  note: string;
+}
+
+export const STATE_REGISTRIES: StateRegistry[] = [
+  {
+    jurisdiction: 'US-CA',
+    name: 'California',
+    centralDeletionPortal: true,
+    deletionRight: true,
+    note: 'DROP reaches every registered broker from one verified request; enforceable since 1 August 2026.'
+  },
+  {
+    jurisdiction: 'US-TX',
+    name: 'Texas',
+    centralDeletionPortal: false,
+    deletionRight: true,
+    note: 'Registry and a deletion right, but no central portal — requests go to each broker individually.'
+  },
+  {
+    jurisdiction: 'US-OR',
+    name: 'Oregon',
+    centralDeletionPortal: false,
+    deletionRight: true,
+    note: 'Registry and a deletion right, but no central portal — requests go to each broker individually.'
+  },
+  {
+    jurisdiction: 'US-VT',
+    name: 'Vermont',
+    centralDeletionPortal: false,
+    deletionRight: false,
+    note: 'Registry only: you can see who is operating, but the statute gives no deletion lever.'
+  },
+  {
+    jurisdiction: 'US-CT',
+    name: 'Connecticut',
+    centralDeletionPortal: false,
+    deletionRight: true,
+    note: 'Following the California model: registration from 1 January 2027, central deletion mechanism by 1 July 2028.'
+  }
+];
+
 export type DropStatus = 'none' | 'submitted' | 'overdue' | 'completed';
 
 export interface CoverageSummary {

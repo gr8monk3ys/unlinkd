@@ -77,7 +77,9 @@ Shipped today:
 - **Removal-request tracking with statutory deadlines**: record when a request
   was sent, to whom and under which right, and the app computes when the
   operator is late. Ships GDPR/UK GDPR (one month, extendable by two under Art.
-  12(3)), CCPA/CPRA (45 days, extendable by 45) and California DROP (90 days).
+  12(3)), CCPA/CPRA (45 days, extendable by 45), California DROP (90 days) and a
+  generic US state profile (45 days, extendable by 45) for the ~20 states with a
+  comprehensive privacy law but no central portal.
   Deadlines are computed rather than stored, always shown with their citation
   and arithmetic, and marked unverified when the compliance profile is past its
   review date.
@@ -114,6 +116,14 @@ today those steps **only navigate to a URL and take a screenshot** — they do n
 fill forms, submit opt-outs, or change account settings. The agent captures
 *evidence*; it does not yet *perform removals*. Real opt-out automation is
 tracked as future work.
+
+**A registry is not a remedy.** Four states publish a data broker registry
+(California, Texas, Oregon, Vermont; Connecticut from 2027), but only California
+pairs one with a central deletion portal. Texas and Oregon give a deletion right
+that must still be exercised broker by broker, and Vermont's registry carries no
+deletion right at all. Outside those states — and across the EU and UK — deletion
+remains one request per operator. The dashboard says so rather than implying
+otherwise.
 
 **Catalog coverage is a fraction of the problem.** The catalog carries a few
 dozen brokers; the California registry alone lists 500+. Working through every

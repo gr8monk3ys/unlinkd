@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CA_BROKER_REGISTRY, DROP_CONNECTOR_ID, summarizeCoverage } from './coverage';
+import { CA_BROKER_REGISTRY, DROP_CONNECTOR_ID, STATE_REGISTRIES, summarizeCoverage } from './coverage';
 import type { ConnectorDefinition, ConnectorInstance, ConnectorState, RemovalRequest } from './types';
 
 const catalog: ConnectorDefinition[] = [
@@ -115,5 +115,24 @@ describe('summarizeCoverage', () => {
   it('dates and sources the denominator so it can be checked', () => {
     expect(Number.isFinite(Date.parse(CA_BROKER_REGISTRY.asOf))).toBe(true);
     expect(CA_BROKER_REGISTRY.sourceUrl).toMatch(/^https:\/\//);
+  });
+});
+
+describe('STATE_REGISTRIES', () => {
+  it('names California as the only jurisdiction with a central deletion portal', () => {
+    const withPortal = STATE_REGISTRIES.filter((registry) => registry.centralDeletionPortal);
+    expect(withPortal.map((registry) => registry.jurisdiction)).toEqual(['US-CA']);
+  });
+
+  it('does not imply Vermont offers a deletion lever it lacks', () => {
+    const vermont = STATE_REGISTRIES.find((registry) => registry.jurisdiction === 'US-VT');
+    expect(vermont?.deletionRight).toBe(false);
+    expect(vermont?.note).toMatch(/no deletion lever/i);
+  });
+
+  it('explains every registry, so none reads as a remedy by implication', () => {
+    STATE_REGISTRIES.forEach((registry) => {
+      expect(registry.note.length).toBeGreaterThan(0);
+    });
   });
 });

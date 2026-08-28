@@ -115,6 +115,24 @@ export const requestChannelLabels: Record<RequestChannel, string> = {
   in_app: 'In-app'
 };
 
+/**
+ * Guidance shown when an outcome is worth acting on rather than just filing.
+ *
+ * The identity note is not a nicety: a 2026 study submitting CCPA requests to
+ * every California-registered broker found some demanding identity
+ * verification that the statute explicitly disallows. A user who is asked for
+ * a driver's licence to exercise a deletion right should know that the demand
+ * may itself be the violation, rather than assuming they must comply.
+ */
+export const requestOutcomeGuidance: Partial<Record<RequestOutcome, string>> = {
+  identity_required:
+    'Operators may verify who you are, but may not demand more than is necessary — under the CCPA an excessive demand (government ID, a selfie, or data they do not already hold) is itself non-compliant. Record what was asked for: the demand is evidence, and you can push back rather than hand over more data than the request needed.',
+  refused:
+    'A refusal must be reasoned. Keep it — a refusal without a lawful basis is the strongest single document in a regulator complaint.',
+  completed:
+    'Capture the confirmation as evidence, then schedule a re-check: deletion does not stop an operator re-acquiring your data from another source.'
+};
+
 export const requestOutcomeLabels: Record<RequestOutcome, string> = {
   acknowledged: 'Acknowledged',
   completed: 'Completed',

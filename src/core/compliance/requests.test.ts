@@ -8,6 +8,7 @@ import {
   createResponse,
   instanceRequests,
   requestChannelLabels,
+  requestOutcomeGuidance,
   requestOutcomeLabels,
   validateNewRequest
 } from './requests';
@@ -111,5 +112,25 @@ describe('labels', () => {
   it('labels every channel and outcome the UI can render', () => {
     expect(Object.values(requestChannelLabels).every((label) => label.length > 0)).toBe(true);
     expect(Object.values(requestOutcomeLabels).every((label) => label.length > 0)).toBe(true);
+  });
+});
+
+describe('outcome guidance', () => {
+  it('tells the user an excessive identity demand may itself be non-compliant', () => {
+    // A 2026 study of California-registered brokers found some demanding
+    // verification the CCPA disallows; a user should not assume they must comply.
+    expect(requestOutcomeGuidance.identity_required).toMatch(/non-compliant/i);
+  });
+
+  it('frames a refusal as evidence worth keeping', () => {
+    expect(requestOutcomeGuidance.refused).toMatch(/refusal/i);
+  });
+
+  it('warns that a completed deletion does not prevent re-acquisition', () => {
+    expect(requestOutcomeGuidance.completed).toMatch(/re-acquir/i);
+  });
+
+  it('offers no guidance where there is nothing useful to say', () => {
+    expect(requestOutcomeGuidance.acknowledged).toBeUndefined();
   });
 });
