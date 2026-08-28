@@ -45,6 +45,7 @@ import {
 } from '../connectors/catalog';
 import { dueConnectorInstances } from '../core/connectors';
 import { requestsNeedingAttention } from '../core/compliance/deadlines';
+import { summarizeCoverage } from '../core/coverage';
 import { useRemovalRequests } from './useRemovalRequests';
 import {
   addAccount,
@@ -1503,6 +1504,7 @@ export function useUnlinkdApp() {
   const requestsAttention = vault
     ? requestsNeedingAttention({ ...vault, connectorInstances })
     : [];
+  const coverage = summarizeCoverage(connectorInstances, connectorCatalog);
 
   return {
     // state
@@ -1574,6 +1576,7 @@ export function useUnlinkdApp() {
     handleWipeAllData,
     // removal requests
     requestsAttention,
+    coverage,
     ...removalRequests
   };
 }

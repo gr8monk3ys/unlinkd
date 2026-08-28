@@ -19,6 +19,15 @@ stored locally. There is no backend, no account, and no tracking.
 > screenshot. unlinkd captures and organizes evidence; it does not submit
 > opt-outs for you. See *Honest scope* below.
 
+> **California residents: start with DROP.** Since 1 August 2026 a single
+> verified request through California's [Delete Request and Opt-out
+> Platform](https://cppa.ca.gov/data_brokers/) obliges *every* registered data
+> broker — 500+ of them — to delete your personal information, with penalties of
+> $200 per request per day for non-compliance. That one action reaches further
+> than every individual opt-out in this catalog combined. unlinkd ships a DROP
+> connector and tracks the request against its statutory window; it does not
+> submit the request for you.
+
 ## Product Requirements
 
 - `docs/PRD-digital-disappearance.md` — the **long-term vision**. Much of it is
@@ -65,6 +74,17 @@ Shipped today:
 - **First-run onboarding wizard**: after creating a vault, a guided setup adds
   identifiers, imports accounts from a password-manager CSV, and suggests
   connector workflows.
+- **Removal-request tracking with statutory deadlines**: record when a request
+  was sent, to whom and under which right, and the app computes when the
+  operator is late. Ships GDPR/UK GDPR (one month, extendable by two under Art.
+  12(3)), CCPA/CPRA (45 days, extendable by 45) and California DROP (90 days).
+  Deadlines are computed rather than stored, always shown with their citation
+  and arithmetic, and marked unverified when the compliance profile is past its
+  review date.
+- **Honest coverage reporting**: progress is stated against the registered data
+  broker population (500+, per the California registry), not against the size of
+  this catalog — because clearing every connector here still leaves most brokers
+  holding your data.
 - Persona management and cross-persona reuse policy warnings.
 - Identifier ingestion with validation/normalization and policy limits.
 - Heuristic local scan (consent-aware) producing prioritized risk findings.
@@ -81,8 +101,10 @@ Shipped today:
   scope note below).
 
 Not yet built (tracked in the PRD as future work): cross-device sync, MFA
-posture scoring, recovery-factor enforcement, jurisdiction compliance profiles,
-and the self-hosted infrastructure/network stack.
+posture scoring, recovery-factor enforcement, and the self-hosted
+infrastructure/network stack. Jurisdiction compliance profiles now exist for
+deadline tracking (GDPR, CCPA, California DROP), but they do not yet drive
+per-jurisdiction connector selection or request wording.
 
 ### Honest scope
 
@@ -92,6 +114,18 @@ today those steps **only navigate to a URL and take a screenshot** — they do n
 fill forms, submit opt-outs, or change account settings. The agent captures
 *evidence*; it does not yet *perform removals*. Real opt-out automation is
 tracked as future work.
+
+**Catalog coverage is a fraction of the problem.** The catalog carries a few
+dozen brokers; the California registry alone lists 500+. Working through every
+connector here would still leave most registered brokers holding your data,
+which is why the dashboard states coverage against the registry rather than
+against the catalog, and why DROP is surfaced ahead of individual opt-outs for
+Californians.
+
+**Deadlines are informational, not legal advice.** Statutory windows are modelled
+from published guidance, dated, and shown with the citation and arithmetic behind
+them so you can check any figure before relying on it. Confirm the window that
+applies to you before escalating to a regulator.
 
 ## Security model
 
@@ -134,6 +168,8 @@ Plain statement of what the local-first design does and does not protect:
 ## Feature summary
 
 - Encrypted local vault (personas, identifiers, accounts, connectors, findings).
+- Removal-request records with computed statutory deadlines (GDPR, CCPA, California DROP).
+- Broker coverage stated against the registered-broker population, not the catalog.
 - Persona management and cross-persona reuse policy warnings.
 - Identifier ingestion with consent-aware records.
 - Input validation and normalization for identifier values.

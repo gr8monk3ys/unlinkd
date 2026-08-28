@@ -150,6 +150,7 @@ export function App(): React.JSX.Element {
           backupStatus={app.backupStatus}
           onGoToBackup={() => setTab('backup')}
           requestsNeedingAttention={app.requestsAttention}
+          coverage={app.coverage}
           onGoToConnectors={() => setTab('connectors')}
         />
         </div>

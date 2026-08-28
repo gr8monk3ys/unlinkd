@@ -112,7 +112,41 @@ export const CCPA_PROFILE: ComplianceProfile = {
   ]
 };
 
-export const COMPLIANCE_PROFILES: ComplianceProfile[] = [GDPR_PROFILE, CCPA_PROFILE];
+/**
+ * California's Delete Request and Opt-out Platform, live since 1 January 2026
+ * and enforceable since 1 August 2026.
+ *
+ * DROP is a different shape from the other regimes here: rather than one
+ * request to one operator, a California resident submits a single verified
+ * request through the state platform and every registered data broker must act
+ * on it. That makes it the highest-leverage single action available to a
+ * Californian, and worth tracking as its own basis.
+ *
+ * The 90-day figure is the composition of two statutory 45-day cycles: a broker
+ * must access DROP at least once every 45 days, then process what it downloaded
+ * within a further 45 calendar days. Reporting sometimes quotes either number
+ * alone; 90 days is the conservative consumer-facing worst case, so it is what
+ * the clock uses.
+ */
+export const CA_DROP_PROFILE: ComplianceProfile = {
+  id: 'ca_drop',
+  name: 'California DROP (Delete Act)',
+  jurisdictions: ['US-CA'],
+  lastReviewed: '2026-08-28',
+  sourceUrl: 'https://cppa.ca.gov/data_brokers/',
+  bases: [
+    {
+      id: 'ca_drop.deletion',
+      label: 'Deletion via the state platform (all registered brokers)',
+      citation: 'Cal. Civ. Code § 1798.99.86 (Delete Act); CPPA DROP regulations',
+      responseWindow: { value: 90, unit: 'days' },
+      extensionNote:
+        'Brokers must check DROP at least every 45 days and process each downloaded request within a further 45 days, so 90 days is the outer bound rather than a promise of 90.'
+    }
+  ]
+};
+
+export const COMPLIANCE_PROFILES: ComplianceProfile[] = [GDPR_PROFILE, CCPA_PROFILE, CA_DROP_PROFILE];
 
 export function findProfile(profileId: string, profiles = COMPLIANCE_PROFILES): ComplianceProfile | null {
   return profiles.find((profile) => profile.id === profileId) ?? null;
