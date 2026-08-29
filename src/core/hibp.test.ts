@@ -183,23 +183,21 @@ describe('checkBreaches', () => {
 
 describe('checkPasswordPwned', () => {
   it('returns the count when the password hash suffix is found', async () => {
-    // SHA-256 of "password123" has a known hash. We mock the response format
-    // that the Pwned Passwords API returns (SHA-256 uppercase suffixes).
-    // The API returns lines of "SUFFIX:count".
+    // The Pwned Passwords range API is defined over SHA-1 hashes and returns
+    // lines of "SUFFIX:count" where SUFFIX is the uppercase SHA-1 hash minus
+    // the first 5 characters.
     const mockPassword = 'test-password';
 
-    // We need to compute the actual SHA-256 hash to know the prefix/suffix.
-    // Instead, we mock fetch to return a response with a matching suffix.
+    // Mock fetch to return a response that contains the matching SHA-1 suffix.
     globalThis.fetch = vi.fn().mockImplementation(async (url: string) => {
       // Extract the 5-char prefix from the URL.
       const prefix = url.toString().split('/range/')[1];
       expect(prefix).toBeTruthy();
       expect(prefix!.length).toBe(5);
 
-      // We need to generate a response that contains the matching suffix.
-      // Compute the hash to know what suffix to include.
-      const { sha256Hex } = await import('./crypto');
-      const hash = (await sha256Hex(mockPassword)).toUpperCase();
+      // Compute the SHA-1 hash to know what suffix to include.
+      const { sha1Hex } = await import('./crypto');
+      const hash = (await sha1Hex(mockPassword)).toUpperCase();
       const suffix = hash.slice(5);
 
       return {

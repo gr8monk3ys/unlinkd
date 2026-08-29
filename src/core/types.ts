@@ -108,6 +108,11 @@ export interface ConnectorDefinition {
   defaultRecheckDays: number;
   steps: ConnectorStep[];
   jurisdictions?: string[];
+  /**
+   * ISO date (YYYY-MM-DD) the connector content was last reviewed for accuracy.
+   * Used by the freshness check to flag stale opt-out/account instructions.
+   */
+  lastReviewed?: string;
 }
 
 export type EvidenceKind = 'screenshot' | 'pdf' | 'email' | 'note' | 'file';

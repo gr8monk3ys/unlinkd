@@ -1,7 +1,7 @@
 {
   "name": "unlinkd",
   "version": "1.0.0",
-  "description": "A full blown OSINT tool to go through best practices for privacy.",
+  "description": "Local-first workspace for getting removed from the internet and proving it: opt-out checklists, encrypted evidence capture, and a tamper-evident record of every request — entirely in your browser.",
   "main": "index.js",
   "directories": {
     "doc": "docs"
@@ -17,9 +17,18 @@
     "test:e2e:ci": "npm run build && playwright test",
     "playwright:install": "playwright install",
     "connectors:keygen": "node scripts/connectors_keygen.mjs",
-    "connectors:publish": "node scripts/connectors_publish.mjs"
+    "connectors:publish": "node scripts/connectors_publish.mjs",
+    "connectors:check": "node scripts/connectors_check_freshness.mjs"
   },
-  "keywords": [],
+  "keywords": [
+    "privacy",
+    "local-first",
+    "digital-footprint",
+    "data-removal",
+    "osint",
+    "self-scan",
+    "encrypted-vault"
+  ],
   "author": "",
   "license": "GPL-3.0-only",
   "type": "module",
@@ -51,7 +60,7 @@
     "jsdom": "^28.0.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.55.0",
-    "vite": "^7.3.1",
+    "vite": "^7.3.6",
     "vitest": "^4.0.18"
   }
 }

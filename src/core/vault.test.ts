@@ -1,9 +1,43 @@
 import { describe, it, expect } from 'vitest';
-import { createEmptyVault, saveVault, unlockVault, loadVault, clearVaultCiphertext, getRawVaultCiphertext } from './vault';
+import {
+  createEmptyVault,
+  saveVault,
+  unlockVault,
+  loadVault,
+  clearVaultCiphertext,
+  getRawVaultCiphertext,
+  getVaultStorageKey,
+  resetVaultSyncState,
+  VaultConflictError,
+  vaultExists
+} from './vault';
 
 const TEST_PASSPHRASE = 'test-passphrase-123';
 
 describe('vault', () => {
+  describe('settings', () => {
+    it('initializes empty settings', () => {
+      expect(createEmptyVault().settings).toEqual({});
+    });
+
+    it('round-trips an encrypted HIBP api key through settings', async () => {
+      clearVaultCiphertext();
+      const vault = createEmptyVault();
+      vault.settings = { hibpApiKey: 'secret-key' };
+      await saveVault(vault, TEST_PASSPHRASE);
+
+      const loaded = await loadVault(TEST_PASSPHRASE);
+      expect(loaded?.settings.hibpApiKey).toBe('secret-key');
+
+      // The raw stored value must not leak the key in plaintext.
+      expect(getRawVaultCiphertext()).not.toContain('secret-key');
+    });
+
+    it('reports vault existence', () => {
+      clearVaultCiphertext();
+      expect(vaultExists()).toBe(false);
+    });
+  });
   describe('createEmptyVault', () => {
     it('returns a valid VaultStateV1 with version 1', () => {
       const vault = createEmptyVault();
@@ -186,6 +220,54 @@ describe('vault', () => {
 
       clearVaultCiphertext();
       expect(getRawVaultCiphertext()).toBeNull();
+    });
+  });
+
+  describe('cross-tab conflict detection', () => {
+    /** Ciphertext as if written by a second unlocked tab. */
+    async function peerCiphertext(personaName: string): Promise<string> {
+      resetVaultSyncState();
+      const theirs = createEmptyVault();
+      theirs.personas[0]!.name = personaName;
+      await saveVault(theirs, TEST_PASSPHRASE, { force: true });
+      return getRawVaultCiphertext()!;
+    }
+
+    it('refuses a save that would overwrite another tab’s write', async () => {
+      const peerRaw = await peerCiphertext('Written by other tab');
+
+      // This tab anchors on its own ciphertext...
+      resetVaultSyncState();
+      const mine = createEmptyVault();
+      await saveVault(mine, TEST_PASSPHRASE, { force: true });
+
+      // ...then the peer tab writes.
+      localStorage.setItem(getVaultStorageKey(), peerRaw);
+
+      await expect(saveVault(mine, TEST_PASSPHRASE)).rejects.toBeInstanceOf(VaultConflictError);
+      // The peer's data must survive untouched.
+      expect(getRawVaultCiphertext()).toBe(peerRaw);
+    });
+
+    it('allows a forced save to replace a conflicting write', async () => {
+      const peerRaw = await peerCiphertext('Other tab');
+
+      resetVaultSyncState();
+      const replacement = createEmptyVault();
+      await saveVault(replacement, TEST_PASSPHRASE, { force: true });
+      localStorage.setItem(getVaultStorageKey(), peerRaw);
+
+      await expect(saveVault(replacement, TEST_PASSPHRASE, { force: true })).resolves.toBeUndefined();
+
+      const loaded = await loadVault(TEST_PASSPHRASE);
+      expect(loaded?.activePersonaId).toBe(replacement.activePersonaId);
+    });
+
+    it('accepts consecutive saves from the same tab', async () => {
+      const vault = createEmptyVault();
+      await saveVault(vault, TEST_PASSPHRASE);
+      await expect(saveVault(vault, TEST_PASSPHRASE)).resolves.toBeUndefined();
+      await expect(saveVault(vault, TEST_PASSPHRASE)).resolves.toBeUndefined();
     });
   });
 });

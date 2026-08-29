@@ -39,10 +39,43 @@ export function parseCsvLine(line: string): string[] {
   return fields;
 }
 
-export function splitNonEmptyLines(text: string): string[] {
-  return text
-    .split(/\r?\n/u)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-}
+/**
+ * Split CSV text into records, honoring quotes: newlines inside quoted fields
+ * (legal CSV — password managers emit them for notes fields) stay inside the
+ * record instead of shearing it apart. Empty records are dropped.
+ */
+export function splitCsvRecords(text: string): string[] {
+  const records: string[] = [];
+  let current = '';
+  let inQuotes = false;
 
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (char === '"') {
+      // An escaped quote ("") toggles twice, so net state stays correct.
+      inQuotes = !inQuotes;
+      current += char;
+      continue;
+    }
+
+    if (!inQuotes && (char === '\n' || char === '\r')) {
+      if (char === '\r' && text[index + 1] === '\n') {
+        index += 1;
+      }
+      if (current.trim().length > 0) {
+        records.push(current);
+      }
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current.trim().length > 0) {
+    records.push(current);
+  }
+
+  return records;
+}

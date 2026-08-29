@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { decryptBytes, decryptJson, encryptBytes, encryptJson, sha256Hex, sha256HexBytes } from './crypto';
+import {
+  DEFAULT_SCRYPT_PARAMS,
+  decryptBytes,
+  decryptJson,
+  encryptBytes,
+  encryptJson,
+  isEncryptedPayload,
+  sha256Hex,
+  sha256HexBytes
+} from './crypto';
 
 describe('crypto', () => {
   describe('encryptJson / decryptJson', () => {
@@ -28,15 +37,67 @@ describe('crypto', () => {
       expect(result).toBeNull();
     });
 
-    it('produces v1 format with pbkdf2 metadata', async () => {
+    it('rejects envelopes declaring absurd scrypt cost parameters', async () => {
+      const encrypted = await encryptJson({ hello: 'world' }, 'passphrase');
+
+      // A hostile envelope must not be able to peg the tab with huge work
+      // factors; the parser refuses out-of-bounds or non-power-of-two costs.
+      expect(isEncryptedPayload({ ...encrypted, n: 2 ** 23 })).toBe(false);
+      expect(isEncryptedPayload({ ...encrypted, n: 300 })).toBe(false);
+      expect(isEncryptedPayload({ ...encrypted, r: 1024 })).toBe(false);
+      expect(isEncryptedPayload({ ...encrypted, p: 500 })).toBe(false);
+      expect(await decryptJson({ ...encrypted, p: 500 }, 'passphrase')).toBeNull();
+    });
+
+    it('derives the same key for composed and decomposed Unicode passphrases', async () => {
+      const nfc = 'caf\u00e9-vault'; // e-acute as one composed codepoint
+      const nfd = 'cafe\u0301-vault'; // e + combining acute accent
+      expect(nfc).not.toBe(nfd);
+
+      const encrypted = await encryptJson({ hello: 'world' }, nfc);
+      expect(await decryptJson(encrypted, nfd)).toEqual({ hello: 'world' });
+    });
+
+    it('produces v2 format with memory-hard scrypt metadata', async () => {
       const encrypted = await encryptJson('test', 'pass');
 
-      expect(encrypted.version).toBe(1);
-      expect(encrypted.kdf).toBe('pbkdf2-sha256');
-      expect(encrypted.iterations).toBe(310_000);
+      expect(encrypted.version).toBe(2);
+      expect(encrypted.kdf).toBe('scrypt');
+      expect(typeof encrypted.n).toBe('number');
+      expect(typeof encrypted.r).toBe('number');
+      expect(typeof encrypted.p).toBe('number');
       expect(typeof encrypted.salt).toBe('string');
       expect(typeof encrypted.iv).toBe('string');
       expect(typeof encrypted.ciphertext).toBe('string');
+    });
+
+    it('uses a strong default scrypt work factor in production config', () => {
+      // Guards against silently shipping a weak KDF. The test runner lowers the
+      // active factor, but the production default constant must stay strong.
+      expect(DEFAULT_SCRYPT_PARAMS.N).toBeGreaterThanOrEqual(2 ** 15);
+      expect(DEFAULT_SCRYPT_PARAMS.r).toBeGreaterThanOrEqual(8);
+    });
+
+    it('returns null when the ciphertext is tampered with', async () => {
+      const encrypted = await encryptJson({ hello: 'world' }, 'passphrase');
+      // Flip a byte in the base64 ciphertext; AES-GCM auth must reject it.
+      const bytes = atob(encrypted.ciphertext);
+      const mutated = btoa((bytes[0] === 'A' ? 'B' : 'A') + bytes.slice(1));
+      const decrypted = await decryptJson({ ...encrypted, ciphertext: mutated }, 'passphrase');
+
+      expect(decrypted).toBeNull();
+    });
+
+    it('recognizes encrypted envelope shapes and rejects plain objects', async () => {
+      const encrypted = await encryptJson({ a: 1 }, 'pass');
+      expect(isEncryptedPayload(encrypted)).toBe(true);
+      expect(isEncryptedPayload({ version: 1, kdf: 'pbkdf2-sha256', iterations: 1, salt: 'a', iv: 'b', ciphertext: 'c' })).toBe(
+        true
+      );
+      expect(isEncryptedPayload({ salt: 'a', iv: 'b', ciphertext: 'c' })).toBe(true);
+      expect(isEncryptedPayload({ hello: 'world' })).toBe(false);
+      expect(isEncryptedPayload(null)).toBe(false);
+      expect(isEncryptedPayload('nope')).toBe(false);
     });
 
     it('handles complex nested objects', async () => {

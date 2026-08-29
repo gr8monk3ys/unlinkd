@@ -1,6 +1,33 @@
-import { describe, it, expect } from 'vitest';
-import { parseConnectorCatalogFeedV1, parseConnectorDefinitions } from './feed';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import * as ed from '@noble/ed25519';
+import { sha512 } from '@noble/hashes/sha2.js';
+import { fetchConnectorFeed, parseConnectorCatalogFeedV1, parseConnectorDefinitions } from './feed';
 import type { ConnectorDefinition } from '../core/types';
+
+ed.hashes.sha512 = sha512;
+
+function toBase64(bytes: Uint8Array): string {
+  return Buffer.from(bytes).toString('base64');
+}
+
+interface MockResponse {
+  ok: boolean;
+  status?: number;
+  body?: string;
+}
+
+function mockFetch(map: Record<string, MockResponse>): typeof fetch {
+  return vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    const entry = map[url];
+    const ok = entry?.ok ?? false;
+    return {
+      ok,
+      status: entry?.status ?? (ok ? 200 : 404),
+      text: async () => entry?.body ?? ''
+    } as Response;
+  }) as unknown as typeof fetch;
+}
 
 function makeManualStep(overrides?: Partial<{ id: string; title: string; instructions: string }>) {
   return {
@@ -31,6 +58,7 @@ function makeConnector(overrides?: Partial<ConnectorDefinition>): ConnectorDefin
     description: overrides?.description ?? 'A test connector for unit testing',
     defaultRecheckDays: overrides?.defaultRecheckDays ?? 30,
     steps: overrides?.steps ?? [makeManualStep()],
+    lastReviewed: overrides?.lastReviewed ?? '2026-06-08',
     ...(overrides?.jurisdictions ? { jurisdictions: overrides.jurisdictions } : {})
   };
 }
@@ -276,5 +304,101 @@ describe('parseConnectorDefinitions', () => {
     const step = makeManualStep({ instructions: '' });
     const connector = makeConnector({ steps: [step] });
     expect(parseConnectorDefinitions([connector])).toBeNull();
+  });
+});
+
+describe('fetchConnectorFeed signature verification + safety', () => {
+  const feedUrl = 'https://feeds.example.com/connectors/catalog.v1.json';
+  const sigUrl = 'https://feeds.example.com/connectors/catalog.v1.sig';
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  async function signedFixture(feedObject: unknown) {
+    const feedText = JSON.stringify(feedObject);
+    const secretKey = ed.utils.randomSecretKey();
+    const publicKey = await ed.getPublicKeyAsync(secretKey);
+    const signature = await ed.signAsync(new TextEncoder().encode(feedText), secretKey);
+    return { feedText, secretKey, publicKeyBase64: toBase64(publicKey), signatureBase64: toBase64(signature) };
+  }
+
+  it('accepts a feed with a valid signature', async () => {
+    const fx = await signedFixture(makeValidFeed());
+    globalThis.fetch = mockFetch({
+      [feedUrl]: { ok: true, body: fx.feedText },
+      [sigUrl]: { ok: true, body: fx.signatureBase64 }
+    });
+
+    const result = await fetchConnectorFeed({ feedUrl, publicKeyBase64: fx.publicKeyBase64 });
+    expect(result.verified).toBe(true);
+    expect(result.feed.connectors).toHaveLength(1);
+  });
+
+  it('rejects a feed whose signature does not verify', async () => {
+    const fx = await signedFixture(makeValidFeed());
+    // Sign a different message so the signature is valid-looking but wrong.
+    const wrongSig = await ed.signAsync(new TextEncoder().encode('not the feed'), fx.secretKey);
+    globalThis.fetch = mockFetch({
+      [feedUrl]: { ok: true, body: fx.feedText },
+      [sigUrl]: { ok: true, body: toBase64(wrongSig) }
+    });
+
+    await expect(fetchConnectorFeed({ feedUrl, publicKeyBase64: fx.publicKeyBase64 })).rejects.toThrow(
+      'verification failed'
+    );
+  });
+
+  it('throws when the signature is missing but a key is configured', async () => {
+    const fx = await signedFixture(makeValidFeed());
+    globalThis.fetch = mockFetch({
+      [feedUrl]: { ok: true, body: fx.feedText },
+      [sigUrl]: { ok: false, status: 404 }
+    });
+
+    await expect(fetchConnectorFeed({ feedUrl, publicKeyBase64: fx.publicKeyBase64 })).rejects.toThrow(
+      'signature is missing'
+    );
+  });
+
+  it('fails closed when no public key is configured', async () => {
+    const feedText = JSON.stringify(makeValidFeed());
+    globalThis.fetch = mockFetch({
+      [feedUrl]: { ok: true, body: feedText },
+      [sigUrl]: { ok: false, status: 404 }
+    });
+
+    await expect(fetchConnectorFeed({ feedUrl, publicKeyBase64: null })).rejects.toThrow(
+      'refusing to use an unsigned feed'
+    );
+  });
+
+  it('accepts an unsigned feed only when explicitly opted in', async () => {
+    const feedText = JSON.stringify(makeValidFeed());
+    globalThis.fetch = mockFetch({
+      [feedUrl]: { ok: true, body: feedText },
+      [sigUrl]: { ok: false, status: 404 }
+    });
+
+    const result = await fetchConnectorFeed({ feedUrl, publicKeyBase64: null, allowUnsigned: true });
+    expect(result.verified).toBeNull();
+  });
+
+  it('rejects a feed older than the cached version (rollback protection)', async () => {
+    const feedText = JSON.stringify(makeValidFeed()); // generatedAt: 2025-06-01
+    globalThis.fetch = mockFetch({
+      [feedUrl]: { ok: true, body: feedText },
+      [sigUrl]: { ok: false, status: 404 }
+    });
+
+    await expect(
+      fetchConnectorFeed({
+        feedUrl,
+        publicKeyBase64: null,
+        allowUnsigned: true,
+        minGeneratedAt: '2025-12-01T00:00:00.000Z'
+      })
+    ).rejects.toThrow('rollback');
   });
 });

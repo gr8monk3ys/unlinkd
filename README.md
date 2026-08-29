@@ -1,16 +1,140 @@
 # unlinkd
 
-A local-first MVP for personal digital disappearance workflows and OSINT self-scan tooling.
+**Get yourself removed from the internet — and keep the proof.**
+
+Removal is not the hard part; *proving* it is. Requests get ignored, brokers
+re-list you months later, and by the time you need to escalate you no longer
+remember what you sent, to whom, or when. unlinkd is a local-first workspace
+that keeps that record: work through data-broker and account-removal
+checklists, capture encrypted evidence of each request, and keep a
+tamper-evident log of what you asked and when — the paper trail a GDPR or CCPA
+escalation actually needs.
+
+It runs entirely in the browser: all data (personas, identifiers, accounts,
+connectors, findings, evidence, audit log) is encrypted with your passphrase and
+stored locally. There is no backend, no account, and no tracking.
+
+> **Scope, plainly:** the connector catalog is *guided manual checklists*. A
+> small number of connectors carry agent steps that navigate to a URL and take a
+> screenshot. unlinkd captures and organizes evidence; it does not submit
+> opt-outs for you. See *Honest scope* below.
 
 ## Product Requirements
 
-- `docs/PRD-digital-disappearance.md`
+- `docs/PRD-digital-disappearance.md` — the **long-term vision**. Much of it is
+  intentionally aspirational; see *Implementation status* below for what is
+  actually shipped today.
 
-## Reports
+## Reports & governance
 
 - `docs/code-quality-report.md`
+- `docs/connector-governance.md` — how the connector catalog is reviewed and
+  kept fresh.
 
-## MVP Features
+## Implementation status
+
+Shipped today:
+
+- Encrypted local vault and evidence store (IndexedDB). New data is encrypted
+  with AES-256-GCM under a key derived by **memory-hard scrypt** from your
+  passphrase. Older PBKDF2 and legacy (unversioned SHA-256) envelopes are still
+  read for migration, and the vault is proactively re-encrypted with scrypt on
+  the next unlock; evidence payloads written before the migration keep their
+  original envelope until re-added. KDF cost parameters read from stored or
+  imported envelopes are bounded, so a hostile envelope cannot peg the tab with
+  absurd work factors.
+- **HMAC-chained audit log**, keyed by a passphrase-derived key and verified
+  automatically on unlock. See *Security model* below for exactly what this does
+  and does not protect against.
+- Passphrase-protected unlock with a create-vault flow (confirm + strength
+  meter) and an explicit "no recovery" wipe path (now behind a two-step
+  confirmation). Because there is no recovery, **export an encrypted backup
+  regularly** (Backup tab) — browser storage can be cleared by a reinstall, OS
+  reset, or storage eviction.
+- **Lock button + auto-lock**: the decrypted vault and passphrase are cleared
+  from memory on demand or after 15 minutes of inactivity.
+- **Durability safeguards**: persistent-storage request on unlock, storage
+  usage/quota and persistence state in the Backup tab, and backup-staleness
+  warnings on the Dashboard.
+- **Cross-tab safety**: compare-and-swap on vault writes, retry-on-conflict for
+  audit appends, and BroadcastChannel sync between open tabs.
+- **Connector freshness surfaced in-app**: connectors past the 90-day review
+  cadence are badged unverified, with a catalog-level count.
+- **Evidence re-encryption**: evidence written under an older KDF can be
+  upgraded to the current memory-hard scrypt envelope from the Backup tab.
+- **First-run onboarding wizard**: after creating a vault, a guided setup adds
+  identifiers, imports accounts from a password-manager CSV, and suggests
+  connector workflows.
+- Persona management and cross-persona reuse policy warnings.
+- Identifier ingestion with validation/normalization and policy limits.
+- Heuristic local scan (consent-aware) producing prioritized risk findings.
+- Findings status workflow (open → in progress → mitigated).
+- Have I Been Pwned integration (Settings tab): optional breach lookup during
+  scans via a stored API key, plus a free k-anonymity password breach check and
+  manual exposure-check suggestions.
+- Signed connector catalog feed + in-app update/import, with a freshness policy.
+- Account discovery imports (password-manager CSV + mailbox discovery).
+- Encrypted backup export/import (import is validated as ciphertext and is
+  non-destructive: a malformed or wrong-passphrase backup is rejected before any
+  existing data is touched) and exportable Markdown reports.
+- Optional local Playwright agent for **evidence capture** (see the honest
+  scope note below).
+
+Not yet built (tracked in the PRD as future work): cross-device sync, MFA
+posture scoring, recovery-factor enforcement, jurisdiction compliance profiles,
+and the self-hosted infrastructure/network stack.
+
+### Honest scope
+
+**"Connector automation":** the catalog is overwhelmingly
+*guided manual checklists*. A small number of connectors carry agent steps, and
+today those steps **only navigate to a URL and take a screenshot** — they do not
+fill forms, submit opt-outs, or change account settings. The agent captures
+*evidence*; it does not yet *perform removals*. Real opt-out automation is
+tracked as future work.
+
+## Security model
+
+Plain statement of what the local-first design does and does not protect:
+
+- **Confidentiality at rest.** All sensitive state is AES-256-GCM encrypted under
+  a key derived from your passphrase with memory-hard scrypt. If someone copies
+  your browser storage **without** your passphrase, the data is not readable; the
+  only attack is offline guessing of the passphrase, which scrypt makes costly.
+  Choose a strong passphrase — it is the single secret protecting everything.
+- **Audit-log integrity.** Records are chained with an HMAC keyed by a
+  passphrase-derived key, stored only as authenticated ciphertext, and verified
+  on unlock. An attacker who can write your browser storage but does **not** know
+  the passphrase cannot forge or alter records. The vault (a separate encrypted
+  store from the audit log) also remembers the tip of the audit chain and
+  cross-checks it on unlock, so wholesale deletion or replacement of the audit
+  blob — which the per-record HMAC chain alone can't notice, since an empty or
+  reset log is still internally "consistent" — is now detected too. Limit:
+  anyone who knows your passphrase can still forge the log (unavoidable for a
+  local-only tool with no external notary).
+- **Connector feed authenticity.** The remote catalog must carry a valid Ed25519
+  signature (the public key is bundled at build time); the app fails closed if no
+  key is configured, and rejects feeds older than the cached version. Manually
+  *imported* connector packs are unsigned and shown as unverified — only import
+  packs you trust.
+- **Not protected against:** a device already compromised while unlocked (malware,
+  a malicious browser extension, or someone with your passphrase). XSS is
+  mitigated by a strict CSP but would be serious if it occurred. This is not a
+  tool for use on a device shared with your adversary.
+- **Durability, not just confidentiality.** The realistic way to lose this data
+  is browser eviction, not an attacker. unlinkd requests persistent storage on
+  unlock and reports whether it was granted (Backup tab), but the only durable
+  copy is an exported backup — the app warns when the last one is over 14 days
+  old.
+- **Multi-tab writes are guarded, not merged.** Vault saves use a
+  compare-and-swap against the stored ciphertext, and audit appends retry on top
+  of a concurrent writer's chain, so a second tab can no longer silently destroy
+  the first tab's work. Tabs also announce writes to each other and re-read.
+  What is *not* provided is field-level merging: if two tabs edit concurrently,
+  the loser is told its change was not saved and is refreshed, rather than being
+  merged automatically.
+
+## Feature summary
 
 - Encrypted local vault (personas, identifiers, accounts, connectors, findings).
 - Persona management and cross-persona reuse policy warnings.
@@ -56,8 +180,13 @@ npm run lint
 npm test
 npm run build
 npm run test:e2e:ci
-npm audit --audit-level=moderate
+npm audit --omit=dev --audit-level=moderate   # production deps that actually ship
+npm audit --audit-level=moderate              # informational: includes dev-only toolchain
 ```
+
+CI gates on the production-dependency audit (what is served to users) and runs
+the full audit as informational, so a transitive advisory in the build
+toolchain (vite/playwright) does not falsely red-flag the shipped app.
 
 ## Deploy (Cloudflare Pages)
 
@@ -153,7 +282,11 @@ Appends hash-chained audit entries and verifies chain integrity.
 Applies local policy checks before ingesting new identifiers.
 
 ### `scoreFinding(finding)` / `sortFindingsByPriority(findings)`
-Scores and ranks findings using weighted harm and exploitability with a threat-tier multiplier.
+Ranks findings with a deterministic formula (weighted harm/exploitability ×
+threat-tier × status). Note: the harm/exploitability/tier inputs are currently
+**fixed constants per finding type** in the scan heuristics, not per-user risk
+modeling — the score is a stable severity ordering, not an estimate of your
+individual risk.
 
 ### `nextStates(current)` / `canTransition(from, to)`
 Provides allowed connector state transitions for deletion/remediation orchestration.

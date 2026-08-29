@@ -1,9 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <path d="M32 4C20 4 12 10 12 10v26c0 12 20 24 20 24s20-12 20-24V10S44 4 32 4z" fill="#0d1117" stroke="#58a6ff" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M32 4C20 4 12 10 12 10v26c0 12 20 24 20 24s20-12 20-24V10S44 4 32 4z" fill="#161b22" opacity="0.9"/>
-  <path d="M32 4C20 4 12 10 12 10v26c0 12 20 24 20 24" fill="#1c2128" opacity="0.5"/>
-  <rect x="26" y="22" width="12" height="14" rx="2" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
-  <path d="M24 22v-4a8 8 0 0116 0v4" fill="none" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
-  <circle cx="32" cy="29" r="2" fill="#58a6ff"/>
-  <line x1="32" y1="29" x2="32" y2="33" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#0d1117"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="none" stroke="#3ecfc4" stroke-opacity="0.25" stroke-width="2"/>
+  <!-- broken link: upper-right half -->
+  <path d="M37 22 l5 -5 a9 9 0 0 1 12.7 12.7 l-5 5"
+        stroke="#3ecfc4" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- broken link: lower-left half -->
+  <path d="M27 42 l-5 5 a9 9 0 0 1 -12.7 -12.7 l5 -5"
+        stroke="#3ecfc4" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- break marks at the severed joint -->
+  <path d="M29 25 l-3.5 -5" stroke="#e6edf3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M25 29 l-5 -3.5" stroke="#e6edf3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M35 39 l3.5 5" stroke="#e6edf3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M39 35 l5 3.5" stroke="#e6edf3" stroke-width="3" stroke-linecap="round"/>
 </svg>
