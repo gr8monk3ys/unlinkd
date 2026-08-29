@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
+import { BrandMark } from './BrandMark';
+import { OnboardingWizard } from './OnboardingWizard';
 import { UnlockScreen } from './UnlockScreen';
-import { tabItems, useUnlinkdApp, type Tab } from './useUnlinkdApp';
+import { AUTO_LOCK_MINUTES, tabItems, useUnlinkdApp, type Tab } from './useUnlinkdApp';
 
 const DashboardTab = lazy(() => import('./tabs/DashboardTab').then((m) => ({ default: m.DashboardTab })));
 const PersonasTab = lazy(() => import('./tabs/PersonasTab').then((m) => ({ default: m.PersonasTab })));
@@ -49,15 +51,59 @@ export function App(): React.JSX.Element {
         onWipeAndRecreate={() => void app.handleWipeAndRecreate()}
         error={app.error}
         auditError={app.auditError}
+        notice={app.notice}
       />
+    );
+  }
+
+  if (app.showOnboarding) {
+    return (
+      <main>
+        <header className="app-header">
+          <h1>
+            <BrandMark />
+            <span>
+              unlink<span className="wordmark-d">d</span>
+            </span>
+          </h1>
+          <span className="header-spacer" />
+          <button type="button" onClick={app.handleCompleteOnboarding}>
+            Skip setup
+          </button>
+        </header>
+        {app.error ? <p role="alert">{app.error}</p> : null}
+        <OnboardingWizard
+          onAddIdentifiers={app.handleOnboardingAddIdentifiers}
+          onImportAccounts={(file) => void app.handleImportAccounts(file)}
+          onAddConnectors={app.handleOnboardingAddConnectors}
+          onComplete={app.handleCompleteOnboarding}
+          availableConnectorIds={new Set(app.connectorCatalog.map((def) => def.id))}
+          accountsImportStatus={app.accountsImportStatus}
+        />
+      </main>
     );
   }
 
   return (
     <main>
       <a href="#tab-content" className="skip-link">Skip to content</a>
-      <h1>unlinkd</h1>
-      <p>{`Persona: ${persona.name}`}</p>
+      <header className="app-header">
+        <h1>
+          <BrandMark />
+          <span>
+            unlink<span className="wordmark-d">d</span>
+          </span>
+        </h1>
+        <span className="header-spacer" />
+        <p className="persona-badge">{`Persona: ${persona.name}`}</p>
+        <button
+          type="button"
+          onClick={app.handleLock}
+          title="Clear the decrypted vault and passphrase from memory"
+        >
+          Lock
+        </button>
+      </header>
       <nav role="tablist" aria-label="Main navigation" onKeyDown={handleTabKeyDown}>
         {tabItems.map((t) => (
           <button
@@ -75,6 +121,8 @@ export function App(): React.JSX.Element {
         ))}
       </nav>
 
+      {app.busy ? <p role="status">Working…</p> : null}
+      {app.notice ? <p role="status">{app.notice}</p> : null}
       {app.error ? <p role="alert">{app.error}</p> : null}
 
       <div id="tab-content">
@@ -99,6 +147,8 @@ export function App(): React.JSX.Element {
           connectorInstances={app.connectorInstances}
           findings={app.prioritizedFindings}
           personaName={persona.name}
+          backupStatus={app.backupStatus}
+          onGoToBackup={() => setTab('backup')}
         />
         </div>
       ) : null}
@@ -174,7 +224,7 @@ export function App(): React.JSX.Element {
         <div role="tabpanel" id="tabpanel-settings" aria-labelledby="tab-settings">
         <SettingsTab
           hibpApiKey={vault.settings.hibpApiKey ?? ''}
-          onSaveHibpApiKey={(key) => void app.handleSaveHibpApiKey(key)}
+          onSaveHibpApiKey={app.handleSaveHibpApiKey}
           onCheckPassword={app.handleCheckPassword}
           manualSuggestions={app.manualSuggestions}
         />
@@ -187,11 +237,23 @@ export function App(): React.JSX.Element {
           onExportBackup={() => void app.handleExportBackup()}
           onImportBackup={(file) => void app.handleImportBackup(file)}
           onWipeAllData={() => void app.handleWipeAllData()}
+          backupStatus={app.backupStatus}
+          storageHealth={app.storageHealth}
+          legacyEvidenceCount={app.legacyEvidenceCount}
+          onUpgradeLegacyEvidence={() => void app.handleUpgradeLegacyEvidence()}
         />
         </div>
       ) : null}
       </Suspense>
       </div>
+
+      <footer className="app-footer">
+        <span>Local-first</span>
+        <span className="dot" />
+        <span>Encrypted on your device</span>
+        <span className="dot" />
+        <span>{`Auto-locks after ${AUTO_LOCK_MINUTES} minutes of inactivity`}</span>
+      </footer>
     </main>
   );
 }

@@ -23,8 +23,8 @@ describe('workflow', () => {
       expect(nextStates('proof_captured')).toEqual(['recheck_scheduled']);
     });
 
-    it('returns empty array for terminal state recheck_scheduled', () => {
-      expect(nextStates('recheck_scheduled')).toEqual([]);
+    it('allows restarting or rescheduling from recheck_scheduled (not a dead end)', () => {
+      expect(nextStates('recheck_scheduled')).toEqual(['discovered', 'recheck_scheduled']);
     });
   });
 

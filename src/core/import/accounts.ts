@@ -1,5 +1,5 @@
 import type { AccountStatus } from '../types';
-import { parseCsvLine, splitNonEmptyLines } from './csv';
+import { parseCsvLine, splitCsvRecords } from './csv';
 
 export interface ImportedAccountRow {
   service: string;
@@ -52,6 +52,13 @@ function normalizeAccountStatus(value: string): AccountStatus {
 
 function detectFormat(headers: string[]): ParseAccountsResult['format'] {
   const normalized = headers.map(normalizeHeader);
+
+  // An explicit `service` column is our documented generic format — check it
+  // first so a generic CSV that also has url/username columns is not
+  // misdetected as a Chrome export (which would discard service/status).
+  if (normalized.includes('service')) {
+    return 'generic';
+  }
 
   // Bitwarden: login_uri/login_username/login_password fields
   if (normalized.some((h) => h.includes('login_uri')) && normalized.some((h) => h.includes('login_username'))) {
@@ -180,6 +187,11 @@ function resolveIndices(header: string[], spec: FormatSpec): ColumnIndices {
   if (spec.loginTypeFilter) {
     indices.type = findColumn(header, spec.loginTypeFilter);
   }
+  // A substring fallback (e.g. the service variant "name" matching a
+  // "username" header) must never bind two keys to the same column.
+  if (indices.service !== -1 && indices.service === indices.username) {
+    indices.service = -1;
+  }
   return indices;
 }
 
@@ -241,7 +253,7 @@ function buildRows(lines: string[], header: string[], spec: FormatSpec): ParseAc
 }
 
 export function parseAccountsCsv(text: string): ParseAccountsResult {
-  const lines = splitNonEmptyLines(text);
+  const lines = splitCsvRecords(text);
   if (lines.length === 0) {
     return { format: 'generic', rows: [], errors: ['CSV is empty.'] };
   }
