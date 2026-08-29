@@ -19,7 +19,12 @@ export function FindingsTab({ findings, onSetStatus }: FindingsTabProps): React.
       <h2>Findings</h2>
       {findings.length === 0 ? (
         <p>No findings yet. Run a scan from the Dashboard to generate findings.</p>
-      ) : null}
+      ) : (
+        <p>
+          The priority score is a fixed severity ordering per finding type — it ranks what to handle
+          first, and is not an estimate of your personal risk.
+        </p>
+      )}
       <ol>
         {findings.map((finding) => {
           const status = finding.status ?? 'open';

@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { appendAuditRecord, clearAuditCiphertext } from '../core/audit';
 import { createEmptyVault, saveVault } from '../core/vault';
 import { App } from './App';
 
@@ -20,6 +21,8 @@ async function createVault(passphrase = STRONG): Promise<void> {
   fireEvent.change(screen.getByLabelText('Passphrase'), { target: { value: passphrase } });
   fireEvent.change(screen.getByLabelText('Confirm passphrase'), { target: { value: passphrase } });
   fireEvent.click(screen.getByRole('button', { name: 'Create Vault' }));
+  // A fresh vault opens the onboarding wizard; skip it to reach the app.
+  fireEvent.click(await screen.findByRole('button', { name: 'Skip setup' }));
   expect(await screen.findByText('Persona: Default')).toBeInTheDocument();
 }
 
@@ -98,6 +101,64 @@ describe('App unlock + create', () => {
 
     await switchToTab('Identifiers');
     expect(await screen.findByText('username: alias')).toBeInTheDocument();
+  });
+
+  it('flags a wholesale-deleted audit log as tampered, even though the vault itself is untouched', async () => {
+    // Build the state an attacker leaves behind after deleting the entire
+    // audit blob (a separate localStorage key from the vault) without
+    // touching the vault: the vault still remembers a chain tip that no
+    // longer appears anywhere in the (now-empty) audit log.
+    const record = await appendAuditRecord('identifier_added', 'email:hash', STRONG);
+    const vault = createEmptyVault();
+    vault.auditChainTip = { id: record!.id, hash: record!.hash };
+    await saveVault(vault, STRONG);
+    clearAuditCiphertext();
+
+    render(<App />);
+    await unlock();
+
+    expect(
+      await screen.findByText(/audit log appears to have been reset or deleted/i)
+    ).toBeInTheDocument();
+  });
+
+  it('locks the vault from the header and returns to the unlock screen', async () => {
+    await saveVault(createEmptyVault(), STRONG);
+
+    render(<App />);
+    await unlock();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lock' }));
+
+    expect(await screen.findByRole('heading', { name: 'Unlock' })).toBeInTheDocument();
+    expect(screen.getByText(/Vault locked/)).toBeInTheDocument();
+    expect(screen.queryByText('Persona: Default')).toBeNull();
+    expect((screen.getByLabelText('Passphrase') as HTMLInputElement).value).toBe('');
+  });
+
+  it('runs the onboarding wizard after creating a fresh vault', async () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText('Passphrase'), { target: { value: STRONG } });
+    fireEvent.change(screen.getByLabelText('Confirm passphrase'), { target: { value: STRONG } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create Vault' }));
+
+    expect(await screen.findByRole('heading', { name: 'Welcome to unlinkd' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Get Started' }));
+
+    fireEvent.change(screen.getByLabelText('Primary email'), { target: { value: 'user@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add These' }));
+
+    // Step 3 (accounts) → skip; step 4 (connectors) → skip; step 5 summary.
+    expect(await screen.findByText('Step 3 of 5')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
+    expect(await screen.findByText('Step 4 of 5')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
+    expect(await screen.findByText('1 identifier added.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Go to Dashboard' }));
+
+    expect(await screen.findByText('Persona: Default')).toBeInTheDocument();
+    await switchToTab('Identifiers');
+    expect(await screen.findByText('email: user@example.com')).toBeInTheDocument();
   });
 });
 

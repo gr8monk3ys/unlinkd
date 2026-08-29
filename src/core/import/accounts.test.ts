@@ -2,6 +2,38 @@ import { describe, expect, it } from 'vitest';
 import { discoverAccountsFromMbox, parseAccountsCsv } from './accounts';
 
 describe('parseAccountsCsv', () => {
+  it('keeps rows whose quoted fields contain newlines (Bitwarden notes)', () => {
+    const csv = [
+      'type,name,notes,login_uri,login_username',
+      'login,GitHub,"first line',
+      'second line of note",https://github.com,dev@example.com',
+      'login,Reddit,plain,https://reddit.com,user@example.com'
+    ].join('\n');
+
+    const parsed = parseAccountsCsv(csv);
+
+    expect(parsed.format).toBe('bitwarden');
+    expect(parsed.rows.map((row) => row.service)).toEqual(['GitHub', 'Reddit']);
+  });
+
+  it('treats a CSV with an explicit service column as generic even when url/username are present', () => {
+    const csv = ['service,username,url,status', 'GitHub,alice,https://github.com,active'].join('\n');
+
+    const parsed = parseAccountsCsv(csv);
+
+    expect(parsed.format).toBe('generic');
+    expect(parsed.rows).toEqual([
+      {
+        service: 'GitHub',
+        username: 'alice',
+        url: 'https://github.com',
+        status: 'active',
+        lastSeenAt: undefined,
+        source: 'csv:generic'
+      }
+    ]);
+  });
+
   it('detects Bitwarden exports and dedupes rows', () => {
     const csv = [
       'type,name,login_uri,login_username',
