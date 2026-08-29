@@ -2,10 +2,19 @@ import { useState } from 'react';
 import type { IdentifierType } from '../core/types';
 
 interface OnboardingWizardProps {
-  onAddIdentifiers: (identifiers: Array<{ type: IdentifierType; value: string }>) => Promise<void>;
+  /** Adds identifiers in one batch; resolves to the number actually added. */
+  onAddIdentifiers: (identifiers: Array<{ type: IdentifierType; value: string }>) => Promise<number>;
   onImportAccounts: (file: File) => void;
-  onAddConnectors: (connectorIds: string[]) => void;
+  /** Adds connector workflows in one batch; resolves to the number actually added. */
+  onAddConnectors: (connectorIds: string[]) => Promise<number>;
   onComplete: () => void;
+  /**
+   * Connector ids currently available in the loaded catalog. Suggestions not in
+   * this set are hidden — on a fresh install only the builtin catalog is loaded.
+   */
+  availableConnectorIds?: ReadonlySet<string>;
+  /** Live status line from the accounts import, if one has run. */
+  accountsImportStatus?: string | null;
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -94,7 +103,9 @@ export function OnboardingWizard({
   onAddIdentifiers,
   onImportAccounts,
   onAddConnectors,
-  onComplete
+  onComplete,
+  availableConnectorIds,
+  accountsImportStatus = null
 }: OnboardingWizardProps): React.JSX.Element {
   const [step, setStep] = useState<Step>(1);
   const [identifiers, setIdentifiers] = useState<IdentifierInputs>({
@@ -105,9 +116,9 @@ export function OnboardingWizard({
   });
   const [importFile, setImportFile] = useState<File | null>(null);
   const [selectedConnectors, setSelectedConnectors] = useState<Set<string>>(new Set());
-  const [identifiersAdded, setIdentifiersAdded] = useState(false);
-  const [accountsImported, setAccountsImported] = useState(false);
-  const [connectorsAdded, setConnectorsAdded] = useState<string[]>([]);
+  const [identifiersAddedCount, setIdentifiersAddedCount] = useState(0);
+  const [accountsImportAttempted, setAccountsImportAttempted] = useState(false);
+  const [connectorsAddedCount, setConnectorsAddedCount] = useState(0);
 
   function goToStep(next: Step): void {
     setStep(next);
@@ -130,8 +141,8 @@ export function OnboardingWizard({
     }
 
     if (items.length > 0) {
-      await onAddIdentifiers(items);
-      setIdentifiersAdded(true);
+      const added = await onAddIdentifiers(items);
+      setIdentifiersAddedCount(added);
     }
 
     goToStep(3);
@@ -140,17 +151,17 @@ export function OnboardingWizard({
   function handleImportAccounts(): void {
     if (importFile) {
       onImportAccounts(importFile);
-      setAccountsImported(true);
+      setAccountsImportAttempted(true);
     }
 
     goToStep(4);
   }
 
-  function handleAddConnectors(): void {
+  async function handleAddConnectors(): Promise<void> {
     const ids = [...selectedConnectors];
     if (ids.length > 0) {
-      onAddConnectors(ids);
-      setConnectorsAdded(ids);
+      const added = await onAddConnectors(ids);
+      setConnectorsAddedCount(added);
     }
 
     goToStep(5);
@@ -173,7 +184,9 @@ export function OnboardingWizard({
     setImportFile(file);
   }
 
-  const suggestions = buildSuggestions(identifiers);
+  const suggestions = buildSuggestions(identifiers).filter(
+    (suggestion) => !availableConnectorIds || availableConnectorIds.has(suggestion.id)
+  );
 
   return (
     <div data-step={step}>
@@ -188,10 +201,10 @@ export function OnboardingWizard({
           </p>
           <p>
             Your passphrase protects an encrypted local vault where all your identifiers,
-            accounts, and evidence are stored. Nothing is sent to any server -- everything
+            accounts, and evidence are stored. Nothing is sent to any server — everything
             stays on your machine.
           </p>
-          <button type="button" onClick={() => goToStep(2)}>
+          <button type="button" className="btn-primary" onClick={() => goToStep(2)}>
             Get Started
           </button>
         </section>
@@ -202,7 +215,7 @@ export function OnboardingWizard({
           <h2>Quick Identity Scan</h2>
           <p>
             These identifiers help us find your exposure across data brokers and services.
-            Only the email field is recommended -- the rest are optional.
+            Only the email field is recommended — the rest are optional.
           </p>
 
           <div>
@@ -299,6 +312,12 @@ export function OnboardingWizard({
 
           <fieldset>
             <legend>Available connectors</legend>
+            {suggestions.length === 0 ? (
+              <p>
+                No suggested workflows are in the loaded catalog yet. Use “Update Catalog” on the
+                Connectors tab to fetch the full signed catalog.
+              </p>
+            ) : null}
             {suggestions.map((suggestion) => (
               <div key={suggestion.id}>
                 <label>
@@ -308,14 +327,14 @@ export function OnboardingWizard({
                     onChange={() => handleToggleConnector(suggestion.id)}
                   />
                   <strong>{suggestion.name}</strong>
-                  {' -- '}
+                  {' — '}
                   {suggestion.reason}
                 </label>
               </div>
             ))}
           </fieldset>
 
-          <button type="button" onClick={handleAddConnectors}>
+          <button type="button" onClick={() => void handleAddConnectors()}>
             Add Selected
           </button>
           <button type="button" onClick={() => goToStep(5)}>
@@ -329,34 +348,25 @@ export function OnboardingWizard({
           <h2>Setup Complete</h2>
           <p>Here is a summary of what was configured:</p>
           <ul>
-            {identifiersAdded ? (
+            {identifiersAddedCount > 0 ? (
               <li>
-                Identifiers added:
-                {' '}
-                {[
-                  identifiers.email.trim() ? 'email' : '',
-                  identifiers.phone.trim() ? 'phone' : '',
-                  identifiers.legalName.trim() ? 'legal name' : '',
-                  identifiers.username.trim() ? 'username' : ''
-                ]
-                  .filter(Boolean)
-                  .join(', ')}
+                {`${identifiersAddedCount} identifier${identifiersAddedCount === 1 ? '' : 's'} added.`}
               </li>
             ) : (
               <li>No identifiers added (you can add them later from the Identifiers tab).</li>
             )}
-            {accountsImported ? (
-              <li>Accounts imported from CSV.</li>
+            {accountsImportAttempted ? (
+              <li>{accountsImportStatus ?? 'Account import ran — see the Accounts tab for details.'}</li>
             ) : (
               <li>No accounts imported (you can import them later from the Accounts tab).</li>
             )}
-            {connectorsAdded.length > 0 ? (
-              <li>{`${connectorsAdded.length} connector workflow${connectorsAdded.length === 1 ? '' : 's'} added.`}</li>
+            {connectorsAddedCount > 0 ? (
+              <li>{`${connectorsAddedCount} connector workflow${connectorsAddedCount === 1 ? '' : 's'} added.`}</li>
             ) : (
               <li>No connectors added (you can add them later from the Connectors tab).</li>
             )}
           </ul>
-          <button type="button" onClick={onComplete}>
+          <button type="button" className="btn-primary" onClick={onComplete}>
             Go to Dashboard
           </button>
         </section>

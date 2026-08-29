@@ -1,32 +1,64 @@
 import { describe, expect, it } from 'vitest';
-import { loadIdentifiers, saveIdentifiers } from './storage';
+import { BACKUP_STALE_DAYS, backupFreshness, formatBytes } from './storage';
 
-describe('storage', () => {
-  it('loads saved identifiers when envelope is fresh', async () => {
-    await saveIdentifiers([{ id: '1', type: 'email', value: 'a@a.com', sensitivity: 2, consent: true }], 'passphrase');
+const DAY_MS = 24 * 60 * 60 * 1000;
+const NOW = Date.parse('2026-07-01T12:00:00.000Z');
 
-    const loaded = await loadIdentifiers(90, 'passphrase');
-    expect(loaded).toHaveLength(1);
+describe('backupFreshness', () => {
+  it('treats a vault that has never been backed up as overdue', () => {
+    const result = backupFreshness(undefined, NOW);
+
+    expect(result.never).toBe(true);
+    expect(result.overdue).toBe(true);
+    expect(result.ageDays).toBeNull();
   });
 
-  it('returns empty list when envelope is stale', async () => {
-    localStorage.setItem(
-      'unlinkd.identifiers.v1',
-      JSON.stringify({
-        salt: 'YWFhYWFhYWFhYWFhYWFhYQ==',
-        iv: 'YmJiYmJiYmJiYmJi',
-        ciphertext: 'YmFk'
-      })
-    );
+  it('treats an unparseable timestamp as never backed up', () => {
+    const result = backupFreshness('not-a-date', NOW);
 
-    const loaded = await loadIdentifiers(30, 'passphrase');
-    expect(loaded).toBeNull();
+    expect(result.never).toBe(true);
+    expect(result.overdue).toBe(true);
   });
 
-  it('returns null for wrong decryption key', async () => {
-    await saveIdentifiers([{ id: '1', type: 'email', value: 'a@a.com', sensitivity: 2, consent: true }], 'passphrase');
+  it('reports a same-day backup as current', () => {
+    const result = backupFreshness(new Date(NOW - 60_000).toISOString(), NOW);
 
-    const loaded = await loadIdentifiers(90, 'wrong');
-    expect(loaded).toBeNull();
+    expect(result.never).toBe(false);
+    expect(result.ageDays).toBe(0);
+    expect(result.overdue).toBe(false);
+  });
+
+  it('is not overdue the day before the threshold', () => {
+    const result = backupFreshness(new Date(NOW - (BACKUP_STALE_DAYS - 1) * DAY_MS).toISOString(), NOW);
+
+    expect(result.ageDays).toBe(BACKUP_STALE_DAYS - 1);
+    expect(result.overdue).toBe(false);
+  });
+
+  it('becomes overdue exactly at the threshold', () => {
+    const result = backupFreshness(new Date(NOW - BACKUP_STALE_DAYS * DAY_MS).toISOString(), NOW);
+
+    expect(result.ageDays).toBe(BACKUP_STALE_DAYS);
+    expect(result.overdue).toBe(true);
+  });
+
+  it('clamps a future timestamp to zero days rather than reporting negatives', () => {
+    const result = backupFreshness(new Date(NOW + 5 * DAY_MS).toISOString(), NOW);
+
+    expect(result.ageDays).toBe(0);
+    expect(result.overdue).toBe(false);
+  });
+});
+
+describe('formatBytes', () => {
+  it('formats byte-scale values without a unit jump', () => {
+    expect(formatBytes(0)).toBe('0 B');
+    expect(formatBytes(1023)).toBe('1023 B');
+  });
+
+  it('scales through KB, MB, and GB', () => {
+    expect(formatBytes(1024)).toBe('1.0 KB');
+    expect(formatBytes(5 * 1024 * 1024)).toBe('5.0 MB');
+    expect(formatBytes(3 * 1024 * 1024 * 1024)).toBe('3.0 GB');
   });
 });

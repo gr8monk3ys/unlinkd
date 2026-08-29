@@ -2,6 +2,38 @@ import { describe, expect, it } from 'vitest';
 import { discoverAccountsFromMbox, parseAccountsCsv } from './accounts';
 
 describe('parseAccountsCsv', () => {
+  it('keeps rows whose quoted fields contain newlines (Bitwarden notes)', () => {
+    const csv = [
+      'type,name,notes,login_uri,login_username',
+      'login,GitHub,"first line',
+      'second line of note",https://github.com,dev@example.com',
+      'login,Reddit,plain,https://reddit.com,user@example.com'
+    ].join('\n');
+
+    const parsed = parseAccountsCsv(csv);
+
+    expect(parsed.format).toBe('bitwarden');
+    expect(parsed.rows.map((row) => row.service)).toEqual(['GitHub', 'Reddit']);
+  });
+
+  it('treats a CSV with an explicit service column as generic even when url/username are present', () => {
+    const csv = ['service,username,url,status', 'GitHub,alice,https://github.com,active'].join('\n');
+
+    const parsed = parseAccountsCsv(csv);
+
+    expect(parsed.format).toBe('generic');
+    expect(parsed.rows).toEqual([
+      {
+        service: 'GitHub',
+        username: 'alice',
+        url: 'https://github.com',
+        status: 'active',
+        lastSeenAt: undefined,
+        source: 'csv:generic'
+      }
+    ]);
+  });
+
   it('detects Bitwarden exports and dedupes rows', () => {
     const csv = [
       'type,name,login_uri,login_username',
@@ -39,6 +71,58 @@ describe('parseAccountsCsv', () => {
       status: 'removed',
       lastSeenAt: new Date('2025-01-01').toISOString()
     });
+  });
+
+  it('detects 1Password exports', () => {
+    const csv = ['Title,Username,Url', 'GitHub,octocat,https://github.com'].join('\n');
+    const parsed = parseAccountsCsv(csv);
+
+    expect(parsed.format).toBe('1password');
+    expect(parsed.rows).toEqual([
+      { service: 'GitHub', username: 'octocat', url: 'https://github.com', status: 'unknown', source: 'csv:1password' }
+    ]);
+  });
+
+  it('detects LastPass exports and falls back to url when name is blank', () => {
+    const csv = ['url,username,name', 'https://reddit.com,reddituser,'].join('\n');
+    const parsed = parseAccountsCsv(csv);
+
+    expect(parsed.format).toBe('lastpass');
+    expect(parsed.rows).toEqual([
+      { service: 'https://reddit.com', username: 'reddituser', url: 'https://reddit.com', status: 'unknown', source: 'csv:lastpass' }
+    ]);
+  });
+
+  it('detects Chrome exports using the origin column', () => {
+    const csv = ['name,origin,username,password', 'Netflix,https://netflix.com,viewer,secret'].join('\n');
+    const parsed = parseAccountsCsv(csv);
+
+    expect(parsed.format).toBe('chrome');
+    expect(parsed.rows).toEqual([
+      { service: 'Netflix', username: 'viewer', url: 'https://netflix.com', status: 'unknown', source: 'csv:chrome' }
+    ]);
+  });
+
+  it('skips Bitwarden rows whose type is not login', () => {
+    const csv = ['type,name,login_uri,login_username', 'card,Visa,,', 'login,Dropbox,,user@example.com'].join('\n');
+    const parsed = parseAccountsCsv(csv);
+
+    expect(parsed.format).toBe('bitwarden');
+    expect(parsed.rows).toEqual([
+      { service: 'Dropbox', username: 'user@example.com', url: undefined, status: 'unknown', source: 'csv:bitwarden' }
+    ]);
+  });
+
+  it('returns a helpful error when required columns are missing', () => {
+    const parsed = parseAccountsCsv(['service,notes', 'Twitter,hello'].join('\n'));
+    expect(parsed.rows).toEqual([]);
+    expect(parsed.errors[0]).toMatch(/service and username/i);
+  });
+
+  it('returns an error for an empty CSV', () => {
+    const parsed = parseAccountsCsv('   ');
+    expect(parsed.format).toBe('generic');
+    expect(parsed.errors).toEqual(['CSV is empty.']);
   });
 });
 

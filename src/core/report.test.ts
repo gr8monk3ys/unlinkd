@@ -13,6 +13,8 @@ function emptyVault(overrides?: Partial<VaultStateV1>): VaultStateV1 {
     accounts: [],
     connectorInstances: [],
     findings: [],
+    settings: {},
+    auditChainTip: null,
     ...overrides
   };
 }
@@ -102,6 +104,32 @@ describe('buildMarkdownReport', () => {
 
     expect(report).not.toContain('## Identifiers (Sensitive)');
     expect(report).not.toContain('secret@example.com');
+  });
+
+  it('redacts finding titles and persona names when redacted is true', () => {
+    const vault = emptyVault({
+      personas: [{ id: 'p1', name: 'RealName Persona', createdAt: '2026-01-01T00:00:00.000Z' }],
+      findings: [
+        {
+          id: 'f1',
+          title: 'Breach exposure for s***@personal-domain.com',
+          harm: 8,
+          exploitability: 7,
+          tier: 'high',
+          personaId: 'p1',
+          status: 'open',
+          source: 'local',
+          createdAt: '2026-01-01T00:00:00.000Z'
+        }
+      ]
+    });
+
+    const report = buildMarkdownReport(vault, defaultOptions({ redacted: true }));
+
+    expect(report).not.toContain('personal-domain.com');
+    expect(report).not.toContain('RealName Persona');
+    expect(report).toContain('[high]');
+    expect(report).toContain('title=[redacted — see full report]');
   });
 
   it('includes identifiers section when redacted is false', () => {

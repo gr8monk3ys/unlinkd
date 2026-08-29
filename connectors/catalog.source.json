@@ -5,7 +5,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for removing public listing entries.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "search",
@@ -28,7 +30,8 @@
         "instructions": "Re-check the listing URL(s). If still present, record the current status and escalate using the provider's support channel.",
         "evidenceHint": "Before/after screenshots"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-spokeo",
@@ -36,7 +39,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for removing broker profile pages.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "find",
@@ -59,7 +64,8 @@
         "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-beenverified",
@@ -67,7 +73,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for removal from BeenVerified people-search listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "locate",
@@ -90,7 +98,8 @@
         "instructions": "Re-check the listing after the processing window and document the outcome.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-intelius",
@@ -98,7 +107,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for Intelius listings and related brands.",
     "defaultRecheckDays": 60,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "identify",
@@ -121,7 +132,8 @@
         "instructions": "Re-check after the published timeline and document the result.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-peoplefinders",
@@ -129,7 +141,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for PeopleFinders listings.",
     "defaultRecheckDays": 60,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "find",
@@ -152,7 +166,8 @@
         "instructions": "Re-check the listing URLs and document whether removal succeeded.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-truthfinder",
@@ -160,7 +175,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for TruthFinder listings.",
     "defaultRecheckDays": 60,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "collect",
@@ -183,7 +200,8 @@
         "instructions": "Re-check the listing after the processing window.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-mylife",
@@ -191,7 +209,9 @@
     "category": "broker",
     "description": "Guided workflow for requesting removal or suppression of profile pages.",
     "defaultRecheckDays": 60,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "locate",
@@ -214,7 +234,8 @@
         "instructions": "Re-check the profile URL after the processing timeline.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-radaris",
@@ -222,7 +243,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for Radaris listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "find",
@@ -245,7 +268,8 @@
         "instructions": "Re-check the listing URL and document the result.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-fastpeoplesearch",
@@ -253,7 +277,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for FastPeopleSearch listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "locate",
@@ -276,7 +302,8 @@
         "instructions": "Re-check the listing and document whether removal succeeded.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-nuwber",
@@ -284,7 +311,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for Nuwber listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "find",
@@ -307,7 +336,8 @@
         "instructions": "Re-check after the processing window.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-peekyou",
@@ -315,7 +345,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for PeekYou people-search profiles.",
     "defaultRecheckDays": 60,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "identify",
@@ -338,7 +370,8 @@
         "instructions": "Re-check the profile URL after the stated processing window.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "search-google",
@@ -361,7 +394,8 @@
         "instructions": "Prioritize URLs by harm and exploitability. Focus on high-risk pages (addresses, phone, doxxing, recovery vectors).",
         "evidenceHint": "Notes"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-facebook",
@@ -391,7 +425,8 @@
         "instructions": "Use first-party deletion/deactivation workflows. Capture proof and schedule a recheck.",
         "evidenceHint": "Deletion confirmation"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-linkedin",
@@ -421,7 +456,8 @@
         "instructions": "Enable strong MFA. Prefer passkeys/hardware keys if supported; otherwise enable TOTP and remove SMS where possible.",
         "evidenceHint": "Settings screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-x",
@@ -451,7 +487,8 @@
         "instructions": "Enable the strongest available MFA for your account and verify recovery options are not cross-persona join keys.",
         "evidenceHint": "Settings screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-google",
@@ -488,7 +525,8 @@
         "instructions": "Use first-party deletion workflows. Capture proof, then re-check key services and recovery channels after the processing window.",
         "evidenceHint": "Deletion confirmation"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-apple",
@@ -525,7 +563,8 @@
         "instructions": "If you plan to leave the ecosystem, use first-party deactivation/deletion options and re-check subscription billing and device sign-in state.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-microsoft",
@@ -562,7 +601,8 @@
         "instructions": "Use first-party account closure. Capture proof and re-check billing and recovery channels after the processing window.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-instagram",
@@ -599,7 +639,8 @@
         "instructions": "Use first-party deactivation/deletion workflows. Capture proof and schedule a recheck.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-tiktok",
@@ -636,7 +677,8 @@
         "instructions": "Use first-party deactivation/deletion workflows. Capture proof and schedule a recheck.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-snapchat",
@@ -673,7 +715,8 @@
         "instructions": "Use first-party deactivation/deletion workflows. Capture proof and schedule a recheck.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-discord",
@@ -710,7 +753,8 @@
         "instructions": "Use first-party account deletion. Capture proof and schedule a recheck for billing and linked integrations.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-reddit",
@@ -747,7 +791,8 @@
         "instructions": "Use first-party deletion. Capture proof and schedule a recheck for remaining public content.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-github",
@@ -784,7 +829,8 @@
         "instructions": "Use first-party deletion workflows. Capture proof and recheck organization access and billing.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-amazon",
@@ -821,7 +867,8 @@
         "instructions": "Use first-party account closure. Capture proof and schedule a recheck for subscriptions and billing.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-paypal",
@@ -858,7 +905,8 @@
         "instructions": "Use first-party closure workflows. Capture proof and schedule a recheck for remaining authorizations.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-dropbox",
@@ -895,7 +943,8 @@
         "instructions": "Use first-party deletion workflows. Capture proof and schedule a recheck.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-uber",
@@ -932,7 +981,8 @@
         "instructions": "Use first-party deletion workflows. Capture proof and schedule a recheck.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-airbnb",
@@ -969,7 +1019,8 @@
         "instructions": "Use first-party deletion workflows. Capture proof and schedule a recheck.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-spotify",
@@ -1006,7 +1057,8 @@
         "instructions": "Use first-party account closure. Capture proof and schedule a recheck for billing and subscriptions.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "account-netflix",
@@ -1043,7 +1095,8 @@
         "instructions": "Cancel subscription and close the account where applicable. Capture proof and schedule a recheck for recurring charges.",
         "evidenceHint": "Confirmation screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "search-bing",
@@ -1066,7 +1119,8 @@
         "instructions": "Re-run the same query set periodically and track which URLs persist, disappear, or newly appear.",
         "evidenceHint": "Notes"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "search-duckduckgo",
@@ -1089,7 +1143,8 @@
         "instructions": "Re-run the same query set periodically and track which URLs persist, disappear, or newly appear.",
         "evidenceHint": "Notes"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-truepeoplesearch",
@@ -1097,7 +1152,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for removing people-search listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "locate",
@@ -1120,7 +1177,8 @@
         "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-instantcheckmate",
@@ -1128,7 +1186,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for removing people-search listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "locate",
@@ -1151,7 +1211,8 @@
         "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-ussearch",
@@ -1159,7 +1220,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for removing people-search listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "locate",
@@ -1182,7 +1245,8 @@
         "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-thatsthem",
@@ -1190,7 +1254,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for removing people-search listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "locate",
@@ -1213,7 +1279,8 @@
         "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-anywho",
@@ -1221,7 +1288,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for removing directory listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "locate",
@@ -1244,7 +1313,8 @@
         "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-zabasearch",
@@ -1252,7 +1322,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for removing people-search listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "locate",
@@ -1275,7 +1347,8 @@
         "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-clustrmaps",
@@ -1283,7 +1356,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for removing profile and address listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "locate",
@@ -1306,7 +1381,8 @@
         "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-smartbackgroundchecks",
@@ -1314,7 +1390,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for removing people-search listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "locate",
@@ -1337,7 +1415,8 @@
         "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "broker-411",
@@ -1345,7 +1424,9 @@
     "category": "broker",
     "description": "Guided opt-out workflow for removing directory listings.",
     "defaultRecheckDays": 45,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "locate",
@@ -1368,7 +1449,8 @@
         "instructions": "Re-check the URL after the published processing timeline. If the listing persists, escalate with support.",
         "evidenceHint": "After screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "other-credit-freeze-us",
@@ -1376,7 +1458,9 @@
     "category": "other",
     "description": "Checklist for placing and maintaining credit freezes to reduce identity-based account opening risk.",
     "defaultRecheckDays": 365,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "experian",
@@ -1406,7 +1490,8 @@
         "instructions": "Verify freezes are active and calendar periodic rechecks. Keep recovery details in your password manager/vault.",
         "evidenceHint": "Notes"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "other-optout-prescreen",
@@ -1414,7 +1499,9 @@
     "category": "other",
     "description": "Reduce unsolicited credit/insurance offers by opting out of prescreened lists (where applicable).",
     "defaultRecheckDays": 365,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "submit",
@@ -1430,7 +1517,8 @@
         "instructions": "Recheck your opt-out status periodically and renew if required.",
         "evidenceHint": "Notes"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "other-chexsystems-freeze",
@@ -1438,7 +1526,9 @@
     "category": "other",
     "description": "Checklist for placing a ChexSystems freeze to reduce new bank account opening risk.",
     "defaultRecheckDays": 365,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "freeze",
@@ -1454,7 +1544,8 @@
         "instructions": "Verify the freeze is active and calendar periodic rechecks.",
         "evidenceHint": "Notes"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "other-nctue-optout",
@@ -1462,7 +1553,9 @@
     "category": "other",
     "description": "Checklist for reducing telecom/utility identity-risk via NCTUE reporting controls (where applicable).",
     "defaultRecheckDays": 365,
-    "jurisdictions": ["US"],
+    "jurisdictions": [
+      "US"
+    ],
     "steps": [
       {
         "id": "request",
@@ -1478,7 +1571,8 @@
         "instructions": "Verify your chosen protections are active and calendar periodic rechecks.",
         "evidenceHint": "Notes"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "other-sim-swap-protection",
@@ -1508,7 +1602,8 @@
         "instructions": "Review authorized users on the account and enable security notifications for SIM/port changes.",
         "evidenceHint": "Settings screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "other-email-aliasing",
@@ -1538,7 +1633,8 @@
         "instructions": "Record which alias maps to which service so you can identify leaks and rotate addresses.",
         "evidenceHint": "Accounts export"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
   },
   {
     "id": "agent-url-screenshot",
@@ -1566,6 +1662,94 @@
         },
         "evidenceHint": "Screenshot"
       }
-    ]
+    ],
+    "lastReviewed": "2026-06-08"
+  },
+  {
+    "id": "agent-broker-listing-capture",
+    "name": "Agent: Capture Broker Listing",
+    "category": "broker",
+    "description": "Automated browser run that opens a recorded data-broker listing URL and captures an encrypted screenshot as before/after removal evidence.",
+    "defaultRecheckDays": 45,
+    "steps": [
+      {
+        "id": "navigate",
+        "type": "agent",
+        "title": "Navigate to the target page",
+        "action": {
+          "kind": "navigate",
+          "url": "{{listingUrl}}"
+        },
+        "evidenceHint": "Page load"
+      },
+      {
+        "id": "screenshot",
+        "type": "agent",
+        "title": "Capture full-page screenshot",
+        "action": {
+          "kind": "screenshot"
+        },
+        "evidenceHint": "Screenshot"
+      }
+    ],
+    "lastReviewed": "2026-06-08"
+  },
+  {
+    "id": "agent-search-selfcheck",
+    "name": "Agent: Capture Self-Search Results",
+    "category": "search",
+    "description": "Automated browser run that opens a search-results URL for your identifiers and captures a screenshot to track exposure over time.",
+    "defaultRecheckDays": 30,
+    "steps": [
+      {
+        "id": "navigate",
+        "type": "agent",
+        "title": "Navigate to the target page",
+        "action": {
+          "kind": "navigate",
+          "url": "{{searchUrl}}"
+        },
+        "evidenceHint": "Page load"
+      },
+      {
+        "id": "screenshot",
+        "type": "agent",
+        "title": "Capture full-page screenshot",
+        "action": {
+          "kind": "screenshot"
+        },
+        "evidenceHint": "Screenshot"
+      }
+    ],
+    "lastReviewed": "2026-06-08"
+  },
+  {
+    "id": "agent-account-security-capture",
+    "name": "Agent: Capture Account Security Settings",
+    "category": "account",
+    "description": "Automated browser run that opens an account security/privacy settings page and captures a screenshot to document MFA and recovery posture.",
+    "defaultRecheckDays": 90,
+    "steps": [
+      {
+        "id": "navigate",
+        "type": "agent",
+        "title": "Navigate to the target page",
+        "action": {
+          "kind": "navigate",
+          "url": "{{settingsUrl}}"
+        },
+        "evidenceHint": "Page load"
+      },
+      {
+        "id": "screenshot",
+        "type": "agent",
+        "title": "Capture full-page screenshot",
+        "action": {
+          "kind": "screenshot"
+        },
+        "evidenceHint": "Screenshot"
+      }
+    ],
+    "lastReviewed": "2026-06-08"
   }
 ]

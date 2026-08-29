@@ -2,6 +2,16 @@ import type { ConnectorDefinition } from '../core/types';
 
 export const builtinConnectorCatalogVersion = 'builtin-2026-02-14';
 
+/** Provenance/verification metadata for the active connector catalog. */
+export interface ConnectorCatalogMeta {
+  source: 'builtin' | 'cache' | 'remote' | 'import';
+  catalogVersion: string;
+  generatedAt: string | null;
+  verified: boolean | null;
+  updatedAt: string | null;
+  error: string | null;
+}
+
 // Small builtin fallback so the app still works if the connector feed can't be loaded.
 export const builtinConnectorCatalog: ConnectorDefinition[] = [
   {
@@ -10,6 +20,7 @@ export const builtinConnectorCatalog: ConnectorDefinition[] = [
     category: 'broker',
     description: 'Guided opt-out workflow for removing public listing entries.',
     defaultRecheckDays: 45,
+    lastReviewed: '2026-06-08',
     steps: [
       {
         id: 'search',
@@ -43,6 +54,7 @@ export const builtinConnectorCatalog: ConnectorDefinition[] = [
     category: 'search',
     description: 'Track top exposed queries and URLs for your identifiers.',
     defaultRecheckDays: 30,
+    lastReviewed: '2026-06-08',
     steps: [
       {
         id: 'queries',
@@ -68,6 +80,7 @@ export const builtinConnectorCatalog: ConnectorDefinition[] = [
     category: 'account',
     description: 'Checklist for hardening or deleting a Facebook account.',
     defaultRecheckDays: 90,
+    lastReviewed: '2026-06-08',
     steps: [
       {
         id: 'mfa',
@@ -112,4 +125,3 @@ export function getConnectorDefinition(
 ): ConnectorDefinition | null {
   return catalog.find((connector) => connector.id === connectorId) ?? null;
 }
-

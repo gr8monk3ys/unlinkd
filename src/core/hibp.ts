@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sha256Hex } from './crypto';
+import { sha1Hex } from './crypto';
 import type { Identifier } from './types';
 
 // ---------------------------------------------------------------------------
@@ -135,7 +135,8 @@ export async function checkBreaches(
  * Returns the number of times the password was found (0 = safe).
  */
 export async function checkPasswordPwned(password: string): Promise<number> {
-  const hash = await sha256Hex(password);
+  // The Pwned Passwords range API is defined over SHA-1 hashes.
+  const hash = await sha1Hex(password);
   const upperHash = hash.toUpperCase();
   const prefix = upperHash.slice(0, 5);
   const suffix = upperHash.slice(5);

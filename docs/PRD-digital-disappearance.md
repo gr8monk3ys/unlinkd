@@ -1,6 +1,13 @@
 # Product Requirements Document (PRD)
 ## Personal Digital Disappearance and OSINT Self-Scan Service
 
+> **Status note:** This PRD describes the full long-term product vision. The
+> current codebase implements a local-first subset of it. For an honest,
+> up-to-date view of what is actually shipped versus planned, see the
+> *Implementation status* section in `README.md`. Sections such as endpoint
+> provisioning, private infrastructure, network segmentation, and MFA-posture
+> scoring are roadmap items, not current functionality.
+
 ## 1) Executive Summary
 This PRD defines a privacy-first service that helps users:
 1. Discover attributable public and semi-public digital exposure (accounts, identifiers, data broker presence, breached identifiers).

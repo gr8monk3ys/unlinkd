@@ -6,6 +6,7 @@ import type {
   RiskFinding,
   ThreatTier
 } from '../core/types';
+import { connectorName } from '../core/connectors';
 
 export interface ProgressOverviewProps {
   identifiersCount: number;
@@ -32,10 +33,6 @@ function computeOverallProgress(instances: ConnectorInstance[]): number {
 
   const total = instances.reduce((sum, instance) => sum + STATE_WEIGHT[instance.state], 0);
   return Math.round(total / instances.length);
-}
-
-function connectorName(connectorId: string, catalog: ConnectorDefinition[]): string {
-  return catalog.find((c) => c.id === connectorId)?.name ?? connectorId;
 }
 
 function countByTier(findings: RiskFinding[]): Record<ThreatTier, number> {

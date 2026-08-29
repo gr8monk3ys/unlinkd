@@ -1,5 +1,74 @@
 # Code Quality & Production Readiness Report
 
+## Addendum (Jun 23, 2026) — security hardening round
+
+This round addressed the highest-severity findings from an external review and
+corrects some claims in the earlier report that were overstated or stale.
+
+**Fixed / shipped:**
+- **KDF is now memory-hard.** New envelopes use scrypt (AES-256-GCM) instead of
+  PBKDF2; old PBKDF2/legacy envelopes are still read for migration. The sole
+  secret guarding local data is no longer protected by a GPU-friendly KDF.
+- **The audit log is now genuinely keyed, not just checksummed.** The previous
+  "hash-chained" log used an *unkeyed* SHA-256 that anyone could recompute, and
+  accepted a bare plaintext array (a no-passphrase injection vector). It now uses
+  an HMAC keyed by a passphrase-derived key, refuses plaintext injection, and is
+  verified automatically on unlock. (Residual, documented honestly: a holder of
+  the passphrase can still forge it; wholesale deletion of the encrypted audit
+  blob is not yet anchored in the vault.)
+- **Backup import is non-destructive.** It validates every blob as a real
+  encrypted envelope before touching storage, rolls back on write failure, and
+  can verify the backup unlocks with the current passphrase first. A
+  malformed/hostile file can no longer wipe the only copy of irrecoverable data.
+- **Connector feed fails closed.** No configured public key → refuse the feed
+  (was fail-open); older-than-cached feeds are rejected (rollback protection);
+  the signature-failure path now has unit tests.
+- **CI audit claim corrected.** The prior "`npm audit` … passing" was stale (it
+  exited non-zero on a transitive dev advisory). CI now gates on the
+  production-dependency audit (what actually ships) and runs the full audit as
+  informational.
+
+**Corrections to earlier framing in this document:** the phrases
+"tamper-evident" and "integrity-protected" used below for the audit trail
+overstated the *original* unkeyed design and should be read in light of the
+keyed-HMAC change above. The scorecard's **7.8/10 / "pilot-ready"** was already
+disowned in the Jun 8 addendum yet still printed below — treat the prose, not
+the number, as current: this is a solid local-first MVP, not a production
+service.
+
+## Addendum (Jun 8, 2026)
+
+This addendum corrects some over-optimistic framing in the original report and
+records a round of feature work that closed real gaps.
+
+**Fixed / shipped in this round:**
+- **HIBP was dead code; now wired.** Breach lookup, the free k-anonymity
+  password check, and manual suggestions were implemented but never reachable
+  from the UI. They are now surfaced in a **Settings** tab and the API key is
+  stored encrypted in the vault and passed into local scans.
+- **Real bug fixed:** the password breach check hashed with SHA-256 while the
+  Pwned Passwords range API is defined over **SHA-1**, so it would always have
+  returned 0 matches. Now uses SHA-1 (security-irrelevant; correctness only).
+- **Findings are now actionable** (open → in progress → mitigated), persisted
+  and audited; the dashboard reflects open counts. Previously the status field
+  existed in the model but could never change.
+- **Passphrase data-loss trap fixed:** vault creation now distinguishes
+  "no vault" from "wrong passphrase", requires confirm + a strength check, and
+  exposes an explicit "no recovery / wipe" path.
+- **`App.tsx` decomposed:** all state and handlers moved into a
+  `useUnlinkdApp` hook; the component is now a thin view. Integration tests
+  added for create/unlock, scan→mitigate, and settings.
+- **Connector content governance:** every connector now carries a
+  `lastReviewed` date enforced by a freshness test + `connectors:check` script,
+  documented in `docs/connector-governance.md`.
+
+**Honest reframing of the original scores:** the prior "7.8/10, pilot-ready"
+was generous. Connector *automation* remains minimal (a handful of agent steps
+vs. ~150 manual ones), there is no cross-device sync by design, and large parts
+of the PRD (MFA posture, recovery enforcement, compliance profiles, infra
+stack) are unbuilt. Treat this as a solid local-first MVP, not a production
+service.
+
 ## Scope
 Assessment of the current TypeScript/React MVP codebase for maintainability, reliability, security posture, testing, and delivery readiness.
 
@@ -67,6 +136,11 @@ Assessment of the current TypeScript/React MVP codebase for maintainability, rel
 - **Recommendation:** add scheduled dependency update PRs and compatibility matrix checks.
 
 ## Production readiness scorecard
+
+> Superseded — see the Jun 23 and Jun 8 addenda. These numbers were disowned as
+> "generous" but left here for history. Read the prose, not the score: a solid
+> local-first MVP, not a production service.
+
 - **Code correctness:** 8.4/10
 - **Test depth:** 7.2/10
 - **Security posture:** 7.8/10

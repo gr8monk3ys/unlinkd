@@ -2,6 +2,12 @@ import 'fake-indexeddb/auto';
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
+import { setScryptParamsForTesting } from '../core/crypto';
+import { resetVaultSyncState } from '../core/vault';
+
+// Use a trivial scrypt work factor in tests so the suite stays fast. Production
+// uses DEFAULT_SCRYPT_PARAMS; correctness (not work factor) is what we assert.
+setScryptParamsForTesting({ N: 2 ** 8, r: 8, p: 1 });
 
 class MemoryStorage implements Storage {
   private store = new Map<string, string>();
@@ -49,6 +55,10 @@ beforeEach(() => {
   }
 
   memoryStorage.clear();
+  // Clearing storage mid-process is not something a real page can do to itself;
+  // reset the cross-tab compare-and-swap token too so each test starts like a
+  // freshly loaded page rather than one holding a stale ciphertext.
+  resetVaultSyncState();
 });
 
 afterEach(() => {

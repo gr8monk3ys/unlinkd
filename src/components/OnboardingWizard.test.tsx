@@ -4,9 +4,13 @@ import { OnboardingWizard } from './OnboardingWizard';
 
 function renderWizard(overrides: Partial<Parameters<typeof OnboardingWizard>[0]> = {}) {
   const props = {
-    onAddIdentifiers: vi.fn<Parameters<typeof OnboardingWizard>[0]['onAddIdentifiers']>().mockResolvedValue(undefined),
+    onAddIdentifiers: vi
+      .fn<Parameters<typeof OnboardingWizard>[0]['onAddIdentifiers']>()
+      .mockImplementation((items) => Promise.resolve(items.length)),
     onImportAccounts: vi.fn(),
-    onAddConnectors: vi.fn(),
+    onAddConnectors: vi
+      .fn<Parameters<typeof OnboardingWizard>[0]['onAddConnectors']>()
+      .mockImplementation((ids) => Promise.resolve(ids.length)),
     onComplete: vi.fn(),
     ...overrides
   };
@@ -262,9 +266,8 @@ describe('OnboardingWizard', () => {
     fireEvent.click(checkboxes[0]!);
     fireEvent.click(screen.getByRole('button', { name: 'Add Selected' }));
 
-    // Step 5 summary
-    expect(screen.getByText(/Identifiers added/)).toBeInTheDocument();
-    expect(screen.getByText(/email/)).toBeInTheDocument();
+    // Step 5 summary reflects the counts the handlers actually reported.
+    expect(await screen.findByText('1 identifier added.')).toBeInTheDocument();
     expect(screen.getByText(/1 connector workflow added/)).toBeInTheDocument();
   });
 
