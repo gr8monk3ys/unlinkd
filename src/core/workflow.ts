@@ -6,7 +6,10 @@ const allowedTransitions: Record<ConnectorState, ConnectorState[]> = {
   user_approved: ['executed'],
   executed: ['proof_captured'],
   proof_captured: ['recheck_scheduled'],
-  recheck_scheduled: []
+  // A due recheck is actionable, not terminal: either the exposure came back
+  // and the workflow restarts from `discovered`, or the recheck passed and a
+  // new recheck window is scheduled (self-transition with a fresh date).
+  recheck_scheduled: ['discovered', 'recheck_scheduled']
 };
 
 export function nextStates(current: ConnectorState): ConnectorState[] {

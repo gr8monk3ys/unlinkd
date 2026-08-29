@@ -206,9 +206,9 @@ async function checkAccountIdentifierMismatch(
   }
 
   for (const account of vault.accounts) {
-    const personaIdentifiers = identifiersByPersona.get(account.personaId);
-    if (!personaIdentifiers) continue;
-
+    // Note: an account whose own persona has NO identifiers still gets checked —
+    // its username matching another persona's identifier is the strongest
+    // contamination signal, not a reason to skip.
     const accountUsername = account.username.toLowerCase();
 
     // Check if the account username matches an identifier from a DIFFERENT persona.
@@ -250,14 +250,19 @@ async function checkStaleAccounts(
   for (const account of vault.accounts) {
     if (account.status !== 'unknown' && account.status !== 'unused') continue;
 
-    const createdMs = new Date(account.createdAt).getTime();
-    if (!Number.isFinite(createdMs)) continue;
+    // Prefer real account evidence (lastSeenAt, e.g. from a mailbox import)
+    // over the vault-record creation date, which only says when the account
+    // was added to unlinkd.
+    const referenceMs = new Date(account.lastSeenAt ?? account.createdAt).getTime();
+    if (!Number.isFinite(referenceMs)) continue;
 
-    if (nowMs - createdMs >= thirtyDaysMs) {
+    if (nowMs - referenceMs >= thirtyDaysMs) {
       const id = await sha256Hex(`stale-account:${account.id}`);
       findings.push({
         id: `f-${id.slice(0, 12)}`,
-        title: `Stale account "${account.service}" has been ${account.status} for 30+ days`,
+        title: account.lastSeenAt
+          ? `Stale account "${account.service}" — no activity seen for 30+ days`
+          : `Stale account "${account.service}" has stayed ${account.status} since it was added 30+ days ago`,
         harm: 5,
         exploitability: 4,
         tier: 'low',
