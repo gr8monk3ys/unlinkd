@@ -242,6 +242,43 @@ export async function verifyAuditChain(passphrase: string): Promise<boolean> {
   return true;
 }
 
+export interface AuditChainTip {
+  id: string;
+  hash: string;
+}
+
+/**
+ * The tip (id + hash of the most recent record) of the current audit chain, or
+ * null if the chain is empty. The vault stores this commitment separately from
+ * the audit log itself so that wholesale deletion or replacement of the audit
+ * blob — an attack the per-record HMAC chain alone cannot catch, since an
+ * empty/replaced log is still internally consistent — can be detected on the
+ * next unlock. See `auditChainTipMatches`.
+ */
+export function computeAuditChainTip(records: AuditRecord[]): AuditChainTip | null {
+  if (records.length === 0) {
+    return null;
+  }
+
+  const last = records[records.length - 1]!;
+  return { id: last.id, hash: last.hash };
+}
+
+/**
+ * Checks a previously-committed chain tip (as stored in the vault) against the
+ * current audit records. The log is append-only, so a genuinely committed tip
+ * must still appear somewhere in the current chain. If it is missing, the
+ * audit blob was deleted, truncated, or replaced independently of the vault
+ * that remembered it — the deletion is the tamper signal, not a hash mismatch.
+ */
+export function auditChainTipMatches(tip: AuditChainTip | null, records: AuditRecord[]): boolean {
+  if (!tip) {
+    return true;
+  }
+
+  return records.some((record) => record.id === tip.id && record.hash === tip.hash);
+}
+
 export function getAuditStorageKey(): string {
   return auditStorageKey;
 }

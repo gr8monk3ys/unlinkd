@@ -149,10 +149,13 @@ Plain statement of what the local-first design does and does not protect:
 - **Audit-log integrity.** Records are chained with an HMAC keyed by a
   passphrase-derived key, stored only as authenticated ciphertext, and verified
   on unlock. An attacker who can write your browser storage but does **not** know
-  the passphrase cannot forge or alter records. Limits: anyone who knows your
-  passphrase can forge the log (unavoidable for a local-only tool with no
-  external notary), and wholesale deletion of the encrypted audit blob is not yet
-  cross-checked against the vault (tracked as future work).
+  the passphrase cannot forge or alter records. The vault (a separate encrypted
+  store from the audit log) also remembers the tip of the audit chain and
+  cross-checks it on unlock, so wholesale deletion or replacement of the audit
+  blob — which the per-record HMAC chain alone can't notice, since an empty or
+  reset log is still internally "consistent" — is now detected too. Limit:
+  anyone who knows your passphrase can still forge the log (unavoidable for a
+  local-only tool with no external notary).
 - **Connector feed authenticity.** The remote catalog must carry a valid Ed25519
   signature (the public key is bundled at build time); the app fails closed if no
   key is configured, and rejects feeds older than the cached version. Manually
