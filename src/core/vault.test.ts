@@ -164,6 +164,73 @@ describe('vault', () => {
     });
   });
 
+  describe('removal requests', () => {
+    it('loads a vault written before request tracking, defaulting requests to empty', async () => {
+      clearVaultCiphertext();
+      resetVaultSyncState();
+
+      const vault = createEmptyVault();
+      // Exactly the shape an older build wrote: no `requests` key at all.
+      vault.connectorInstances = [
+        {
+          id: 'ci-legacy',
+          connectorId: 'broker-x',
+          personaId: vault.activePersonaId,
+          state: 'executed',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          evidence: []
+        }
+      ];
+      await saveVault(vault, TEST_PASSPHRASE);
+
+      const loaded = await loadVault(TEST_PASSPHRASE);
+      expect(loaded?.connectorInstances[0]?.requests).toEqual([]);
+    });
+
+    it('round-trips a request and its responses', async () => {
+      clearVaultCiphertext();
+      resetVaultSyncState();
+
+      const vault = createEmptyVault();
+      vault.connectorInstances = [
+        {
+          id: 'ci1',
+          connectorId: 'broker-x',
+          personaId: vault.activePersonaId,
+          state: 'executed',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          evidence: [],
+          requests: [
+            {
+              id: 'req1',
+              profileId: 'gdpr',
+              basisId: 'gdpr.art17',
+              channel: 'email',
+              recipient: 'privacy@example.com',
+              sentAt: '2026-07-14T00:00:00.000Z',
+              responses: [
+                {
+                  id: 'resp1',
+                  receivedAt: '2026-07-20T00:00:00.000Z',
+                  outcome: 'acknowledged',
+                  extensionClaimed: true
+                }
+              ]
+            }
+          ]
+        }
+      ];
+      await saveVault(vault, TEST_PASSPHRASE);
+
+      const request = (await loadVault(TEST_PASSPHRASE))?.connectorInstances[0]?.requests?.[0];
+      expect(request?.basisId).toBe('gdpr.art17');
+      expect(request?.recipient).toBe('privacy@example.com');
+      expect(request?.responses[0]?.extensionClaimed).toBe(true);
+    });
+  });
+
   describe('unlockVault with wrong passphrase', () => {
     it('returns null when using wrong passphrase on existing vault', async () => {
       const vault = createEmptyVault();

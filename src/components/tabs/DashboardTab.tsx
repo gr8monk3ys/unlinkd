@@ -9,6 +9,10 @@ import { connectorName } from '../../core/connectors';
 import type { BackupFreshness } from '../../core/storage';
 import { ExposureGraph } from '../ExposureGraph';
 import { ProgressOverview } from '../ProgressOverview';
+import { RequestWorklist } from '../RequestWorklist';
+import { CoverageMeter } from '../CoverageMeter';
+import type { CoverageSummary } from '../../core/coverage';
+import type { TrackedRequest } from '../../core/compliance/deadlines';
 
 export interface DashboardTabProps {
   personaIdentifiersCount: number;
@@ -30,6 +34,11 @@ export interface DashboardTabProps {
   personaName?: string;
   backupStatus?: BackupFreshness;
   onGoToBackup?: () => void;
+  /** Requests past, or approaching, their statutory deadline. Worst first. */
+  requestsNeedingAttention?: TrackedRequest[];
+  onGoToConnectors?: () => void;
+  /** Progress against the registered-broker population, not just the catalog. */
+  coverage?: CoverageSummary;
 }
 
 function fmtDue(value: string | undefined): string {
@@ -58,7 +67,10 @@ export function DashboardTab(props: DashboardTabProps): React.JSX.Element {
     findings,
     personaName,
     backupStatus,
-    onGoToBackup
+    onGoToBackup,
+    requestsNeedingAttention,
+    onGoToConnectors,
+    coverage
   } = props;
 
   return (
@@ -85,6 +97,14 @@ export function DashboardTab(props: DashboardTabProps): React.JSX.Element {
           ) : null}
         </section>
       ) : null}
+
+      {coverage ? <CoverageMeter summary={coverage} onOpenConnectors={onGoToConnectors} /> : null}
+
+      <RequestWorklist
+        tracked={requestsNeedingAttention ?? []}
+        connectorCatalog={connectorCatalog}
+        onOpenConnectors={onGoToConnectors}
+      />
 
       {dueConnectors.length > 0 ? (
         <section
