@@ -1,11 +1,11 @@
+# Dependabot retune 2026-09-10: this repo is deployed, so version updates stay on,
+# but monthly with a small PR cap. Security updates are a repo setting and unaffected.
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    ignore:
-      # Same-owner reusable workflows live in the PRIVATE gr8monk3ys/github
-      # repo; Dependabot cannot reach it (git_dependencies_not_reachable)
-      # and fails every weekly run. They are pinned manually, not versioned.
-      - dependency-name: "gr8monk3ys/*"
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: monthly
+  ignore:
+  - dependency-name: gr8monk3ys/*
+  open-pull-requests-limit: 3
