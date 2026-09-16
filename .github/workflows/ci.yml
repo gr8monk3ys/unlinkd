@@ -3,6 +3,9 @@ permissions: read-all
 name: CI
 
 on:
+  # public repo: Actions minutes are unlimited, keep the default branch measured
+  push:
+    branches: [main]
   pull_request:
 
 concurrency:
