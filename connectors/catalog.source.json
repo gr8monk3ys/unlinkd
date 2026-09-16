@@ -1,5 +1,60 @@
 [
   {
+    "id": "ca-drop-deletion",
+    "name": "California DROP (delete from every registered broker)",
+    "category": "broker",
+    "description": "One verified request through California's state platform directs every registered data broker to delete your personal information. Enforceable since 1 August 2026. If you are a California resident this is the highest-leverage action available — it reaches 500+ brokers at once, where an individual opt-out reaches one.",
+    "defaultRecheckDays": 45,
+    "lastReviewed": "2026-08-28",
+    "jurisdictions": [
+      "US-CA"
+    ],
+    "steps": [
+      {
+        "id": "eligibility",
+        "type": "manual",
+        "title": "Confirm you are a California resident",
+        "instructions": "DROP is open to California residents only, and the state verifies residency as part of submission. If you are not a Californian, skip this connector and use the per-broker opt-outs (and, in the EU/UK, a GDPR Art. 17 erasure request).",
+        "evidenceHint": "No evidence needed for this step"
+      },
+      {
+        "id": "submit",
+        "type": "manual",
+        "title": "Submit the deletion request at privacy.ca.gov",
+        "instructions": "Go to privacy.ca.gov/drop/ and open the Delete Request and Opt-out Platform. Create a profile, complete the state's residency verification, and choose how much identifying information to share — you control how much you provide, and more information helps brokers match your records. Submit the deletion request and capture the confirmation screen.",
+        "evidenceHint": "Screenshot of the submission confirmation"
+      },
+      {
+        "id": "record",
+        "type": "manual",
+        "title": "Record the request against the 90-day clock",
+        "instructions": "In the Removal requests panel below, record this request under the 'California DROP (Delete Act)' regime so the deadline is tracked. Brokers must check DROP at least every 45 days and process what they download within a further 45, so 90 days is the outer bound.",
+        "evidenceHint": "Submission reference or date"
+      },
+      {
+        "id": "status",
+        "type": "manual",
+        "title": "Check deletion status on the platform",
+        "instructions": "DROP reports per-broker status back to you. Re-open your profile, review which brokers have acted, and capture the status view. Non-compliance after the deadline is enforceable by the CPPA at $200 per request per day, so a dated record of the gap is worth keeping.",
+        "evidenceHint": "Screenshot of the platform status view"
+      },
+      {
+        "id": "recheck",
+        "type": "manual",
+        "title": "Re-check on the next cycle",
+        "instructions": "Deletion is an ongoing obligation, not a one-off. Registered brokers must maintain suppression lists so your details are not simply re-collected, and a broker that does re-acquire your data must delete it again on the following cycle. Re-check status roughly every 45 days and capture fresh evidence whenever a broker reappears — a reappearance after a confirmed deletion is itself reportable.",
+        "evidenceHint": "Dated status screenshot"
+      },
+      {
+        "id": "escalate",
+        "type": "manual",
+        "title": "Report a broker that ignores the deadline",
+        "instructions": "If a broker has not acted once the window has passed, the CPPA enforces the Delete Act at $200 per request per day. Export a report from unlinkd covering this request's timeline and evidence, and file a complaint with the CPPA. Independent testing in 2026 found a meaningful fraction of registered brokers never respond at all, so a dated record of silence is worth keeping.",
+        "evidenceHint": "Complaint reference and the dated status evidence"
+      }
+    ]
+  },
+  {
     "id": "broker-whitepages",
     "name": "Whitepages (Opt-out)",
     "category": "broker",

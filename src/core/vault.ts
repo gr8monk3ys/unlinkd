@@ -74,6 +74,28 @@ const evidenceMetaSchema = z.object({
   label: z.string().optional()
 });
 
+const requestResponseSchema = z.object({
+  id: z.string(),
+  receivedAt: z.string(),
+  outcome: z.enum(['acknowledged', 'completed', 'refused', 'identity_required', 'partial']),
+  note: z.string().optional(),
+  evidenceId: z.string().optional(),
+  extensionClaimed: z.boolean().optional()
+});
+
+const removalRequestSchema = z.object({
+  id: z.string(),
+  profileId: z.string(),
+  basisId: z.string(),
+  channel: z.enum(['web_form', 'email', 'postal', 'phone', 'in_app']),
+  recipient: z.string().optional(),
+  sentAt: z.string(),
+  responses: z.array(requestResponseSchema),
+  dueAtOverride: z.string().optional(),
+  closedAt: z.string().optional(),
+  notes: z.string().optional()
+});
+
 const connectorInstanceSchema = z.object({
   id: z.string(),
   connectorId: z.string(),
@@ -83,7 +105,10 @@ const connectorInstanceSchema = z.object({
   updatedAt: z.string(),
   nextCheckAt: z.string().optional(),
   evidence: z.array(evidenceMetaSchema),
-  notes: z.string().optional()
+  notes: z.string().optional(),
+  // Optional with a default so vaults written before request tracking load
+  // unchanged: no migration step, no chance of rejecting existing data.
+  requests: z.array(removalRequestSchema).optional().default([])
 });
 
 const findingSchema = z.object({
