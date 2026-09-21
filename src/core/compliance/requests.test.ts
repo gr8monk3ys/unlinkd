@@ -56,6 +56,27 @@ describe('validateNewRequest', () => {
     expect(validateNewRequest({ ...validInput, sentAt: '2027-01-01T00:00:00.000Z' }, now)?.field).toBe('sentAt');
   });
 
+  it('accepts a date-only send date submitted from a timezone west of UTC in the evening', () => {
+    // 20:00 Pacific on 14 July is 03:00Z on 15 July. The UI pins the local
+    // calendar day to midday UTC, so the recorded instant (14 July 12:00Z) is
+    // earlier than now and must pass; the same day is not "the future".
+    const pacificEvening = Date.parse('2026-07-15T03:00:00Z');
+    expect(validateNewRequest({ ...validInput, sentAt: '2026-07-14T12:00:00.000Z' }, pacificEvening)).toBeNull();
+  });
+
+  it('accepts a date-only send date submitted from a timezone east of UTC in the morning', () => {
+    // 01:00 in Auckland (UTC+12) on 15 July is 13:00Z on 14 July. The local
+    // day, pinned to midday UTC, is 15 July 12:00Z: 23 hours ahead of now,
+    // but still today for the person submitting it.
+    const aucklandMorning = Date.parse('2026-07-14T13:00:00Z');
+    expect(validateNewRequest({ ...validInput, sentAt: '2026-07-15T12:00:00.000Z' }, aucklandMorning)).toBeNull();
+  });
+
+  it('still rejects a send date more than a day ahead, so the tolerance cannot hide an overdue request', () => {
+    const now = Date.parse('2026-07-14T13:00:00Z');
+    expect(validateNewRequest({ ...validInput, sentAt: '2026-07-16T12:00:00.000Z' }, now)?.field).toBe('sentAt');
+  });
+
   it('allows an omitted send date, which defaults to now', () => {
     const withoutDate = { profileId: 'gdpr', basisId: 'gdpr.art17', channel: 'email' as const };
     expect(validateNewRequest(withoutDate, now)).toBeNull();

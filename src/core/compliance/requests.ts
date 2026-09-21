@@ -17,10 +17,24 @@ export interface RequestValidationError {
   message: string;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * How far ahead of `now`, in whole UTC days, a send date may sit and still be
+ * "today" somewhere. A send date is a calendar day (the UI pins it to midday
+ * UTC), so the same local day can land up to one UTC day either side of the
+ * instant the user submits it. One day of tolerance covers every timezone;
+ * anything further out really is in the future.
+ */
+export const SENT_AT_TOLERANCE_DAYS = 1;
+
 /**
  * Reject what would produce a meaningless deadline. A send date in the future
  * is the important one: it would silently push the clock out and make an
  * overdue request look healthy.
+ *
+ * The comparison is at day granularity, not instant granularity: a request
+ * sent "today" is legitimate whichever side of the UTC midnight the user is on.
  */
 export function validateNewRequest(
   input: NewRequestInput,
@@ -35,7 +49,9 @@ export function validateNewRequest(
     if (!Number.isFinite(sentAt)) {
       return { field: 'sentAt', message: 'Enter the date the request was sent.' };
     }
-    if (sentAt > now) {
+    const sentDay = Math.floor(sentAt / DAY_MS);
+    const today = Math.floor(now / DAY_MS);
+    if (sentDay > today + SENT_AT_TOLERANCE_DAYS) {
       return { field: 'sentAt', message: 'A request cannot have been sent in the future.' };
     }
   }

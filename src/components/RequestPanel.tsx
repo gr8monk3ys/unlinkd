@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { ConnectorInstance, RequestChannel, RequestOutcome } from '../core/types';
-import { computeDeadline } from '../core/compliance/deadlines';
+import { computeDeadline, describeWindow } from '../core/compliance/deadlines';
 import { COMPLIANCE_PROFILES } from '../core/compliance/profiles';
+import { localIsoDate } from '../core/utils';
 import {
   instanceRequests,
   requestChannelLabels,
@@ -35,11 +36,6 @@ const STATUS_LABELS: Record<string, string> = {
   unknown: 'No deadline'
 };
 
-/** Today in YYYY-MM-DD, for the date input's default and max. */
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 /**
  * Records what was asked of an operator, when, and under which right — the
  * facts the deadline engine needs and an escalation would have to cite.
@@ -50,10 +46,11 @@ export function RequestPanel(props: RequestPanelProps): React.JSX.Element {
   const [profileId, setProfileId] = useState(COMPLIANCE_PROFILES[0]?.id ?? 'gdpr');
   const [basisId, setBasisId] = useState(COMPLIANCE_PROFILES[0]?.bases[0]?.id ?? '');
   const [channel, setChannel] = useState<RequestChannel>('web_form');
-  const [sentAt, setSentAt] = useState(today());
+  const [sentAt, setSentAt] = useState(localIsoDate());
   const [recipient, setRecipient] = useState('');
 
   const profile = COMPLIANCE_PROFILES.find((candidate) => candidate.id === profileId);
+  const selectedBasis = profile?.bases.find((candidate) => candidate.id === basisId);
   const requests = instanceRequests(instance);
 
   function selectProfile(nextId: string): void {
@@ -160,6 +157,11 @@ export function RequestPanel(props: RequestPanelProps): React.JSX.Element {
               </option>
             ))}
           </select>
+          {selectedBasis ? (
+            <div style={{ fontSize: '0.8em', opacity: 0.85 }} data-testid="basis-window">
+              {`Response window: ${describeWindow(selectedBasis.responseWindow)}`}
+            </div>
+          ) : null}
         </div>
 
         <div>
@@ -183,7 +185,7 @@ export function RequestPanel(props: RequestPanelProps): React.JSX.Element {
             id={`req-sent-${instance.id}`}
             type="date"
             value={sentAt}
-            max={today()}
+            max={localIsoDate()}
             onChange={(event) => setSentAt(event.target.value)}
           />
         </div>
