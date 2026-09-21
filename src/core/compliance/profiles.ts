@@ -24,8 +24,14 @@ export interface ComplianceWindow {
   /**
    * Months are calendar months, not 30-day blocks — GDPR Art. 12(3) says "one
    * month", and 31 January plus one month is 28 or 29 February.
+   *
+   * Business days skip Saturdays and Sundays only. Public holidays are not
+   * modelled: they vary by state and year, and a holiday table that nobody
+   * re-verifies would be a confidently wrong deadline. The effect is that a
+   * business-day window may be computed a day or two *early* around a holiday,
+   * which errs on the side of the consumer chasing sooner, never later.
    */
-  unit: 'days' | 'months';
+  unit: 'days' | 'businessDays' | 'months';
 }
 
 export interface ComplianceProfile {
@@ -106,8 +112,10 @@ export const CCPA_PROFILE: ComplianceProfile = {
     {
       id: 'ccpa.optout',
       label: 'Opt out of sale or sharing',
-      citation: 'Cal. Civ. Code § 1798.120',
-      responseWindow: { value: 15, unit: 'days' }
+      // The statute (§ 1798.120, § 1798.135) grants the right; the 15-business-day
+      // figure is set by the CPPA regulations, not the Civil Code.
+      citation: 'Cal. Civ. Code § 1798.120 / § 1798.135; timing per Cal. Code Regs. tit. 11 § 7026(f)(1)',
+      responseWindow: { value: 15, unit: 'businessDays' }
     }
   ]
 };

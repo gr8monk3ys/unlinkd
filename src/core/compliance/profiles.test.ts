@@ -55,6 +55,12 @@ describe('compliance profiles', () => {
     expect(findBasis('ccpa', 'ccpa.delete')?.responseWindow).toEqual({ value: 45, unit: 'days' });
   });
 
+  it('models the CCPA opt-out window as 15 business days, per the CPPA regulations', () => {
+    const optout = findBasis('ccpa', 'ccpa.optout');
+    expect(optout?.responseWindow).toEqual({ value: 15, unit: 'businessDays' });
+    expect(optout?.citation).toMatch(/7026\(f\)\(1\)/);
+  });
+
   it('looks profiles up by id and returns null when absent', () => {
     expect(findProfile('gdpr')).toBe(GDPR_PROFILE);
     expect(findProfile('ccpa')).toBe(CCPA_PROFILE);

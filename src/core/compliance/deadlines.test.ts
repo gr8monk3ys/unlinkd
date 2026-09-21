@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RemovalRequest, RequestOutcome } from '../types';
-import { computeDeadline, DUE_SOON_DAYS, requestsNeedingAttention } from './deadlines';
+import { addBusinessDays, computeDeadline, describeWindow, DUE_SOON_DAYS, requestsNeedingAttention } from './deadlines';
 import { COMPLIANCE_PROFILES, type ComplianceProfile } from './profiles';
 import type { VaultStateV1 } from '../vault';
 
@@ -27,7 +27,57 @@ function freshProfiles(now: string): ComplianceProfile[] {
   return COMPLIANCE_PROFILES.map((profile) => ({ ...profile, lastReviewed: now.slice(0, 10) }));
 }
 
+describe('addBusinessDays', () => {
+  const iso = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
+
+  it('skips the weekend: Friday plus one business day is Monday', () => {
+    // 2026-07-17 is a Friday.
+    expect(iso(addBusinessDays(at('2026-07-17T12:00:00Z'), 1))).toBe('2026-07-20');
+  });
+
+  it('counts five business days as one calendar week', () => {
+    // Monday 2026-07-13 plus 5 business days is Monday 2026-07-20.
+    expect(iso(addBusinessDays(at('2026-07-13T12:00:00Z'), 5))).toBe('2026-07-20');
+  });
+
+  it('starts counting from the next weekday when sent on a Saturday', () => {
+    // Saturday 2026-07-18 plus 1 business day is Monday 2026-07-20.
+    expect(iso(addBusinessDays(at('2026-07-18T12:00:00Z'), 1))).toBe('2026-07-20');
+  });
+
+  it('turns 15 business days into 21 calendar days from a weekday', () => {
+    // Wednesday 2026-07-15 → Wednesday 2026-08-05: three full weeks.
+    expect(iso(addBusinessDays(at('2026-07-15T12:00:00Z'), 15))).toBe('2026-08-05');
+  });
+
+  it('adds nothing for zero business days', () => {
+    expect(addBusinessDays(at('2026-07-15T12:00:00Z'), 0)).toBe(at('2026-07-15T12:00:00Z'));
+  });
+});
+
+describe('describeWindow', () => {
+  it('names each unit, singular and plural', () => {
+    expect(describeWindow({ value: 1, unit: 'months' })).toBe('1 month');
+    expect(describeWindow({ value: 45, unit: 'days' })).toBe('45 days');
+    expect(describeWindow({ value: 15, unit: 'businessDays' })).toBe('15 business days');
+    expect(describeWindow({ value: 1, unit: 'businessDays' })).toBe('1 business day');
+  });
+});
+
 describe('computeDeadline', () => {
+  it('computes the CCPA opt-out deadline in business days and says so', () => {
+    // Wednesday 15 July plus 15 business days is Wednesday 5 August, not 30 July.
+    const result = computeDeadline(
+      request({ profileId: 'ccpa', basisId: 'ccpa.optout', sentAt: '2026-07-15T12:00:00.000Z' }),
+      freshProfiles('2026-07-15'),
+      at('2026-07-16T00:00:00Z')
+    );
+
+    expect(result.dueAt).toBe('2026-08-05');
+    expect(result.explanation).toContain('plus 15 business days');
+    expect(result.status).toBe('pending');
+  });
+
   it('adds one calendar month for a GDPR erasure request', () => {
     const result = computeDeadline(request(), freshProfiles('2026-07-20'), at('2026-07-20T00:00:00Z'));
 

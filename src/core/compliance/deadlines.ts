@@ -70,12 +70,45 @@ function addMonths(ms: number, months: number): number {
   return date.getTime();
 }
 
-function addWindow(ms: number, window: ComplianceWindow): number {
-  return window.unit === 'months' ? addMonths(ms, window.value) : ms + window.value * DAY_MS;
+function isWeekend(ms: number): boolean {
+  const day = new Date(ms).getUTCDay();
+  return day === 0 || day === 6;
 }
 
-function describeWindow(window: ComplianceWindow): string {
-  const noun = window.unit === 'months' ? 'month' : 'day';
+/**
+ * Business-day arithmetic: each step lands on the next Monday–Friday, so a
+ * request sent on a Friday plus one business day is due the following Monday.
+ * Weekends are judged in UTC, which is where send dates are pinned (midday
+ * UTC), so the weekday of the recorded date is the weekday the user chose.
+ *
+ * Public holidays are deliberately not modelled; see ComplianceWindow.unit.
+ */
+export function addBusinessDays(ms: number, businessDays: number): number {
+  let cursor = ms;
+  let remaining = businessDays;
+  while (remaining > 0) {
+    cursor += DAY_MS;
+    if (!isWeekend(cursor)) {
+      remaining -= 1;
+    }
+  }
+  return cursor;
+}
+
+function addWindow(ms: number, window: ComplianceWindow): number {
+  switch (window.unit) {
+    case 'months':
+      return addMonths(ms, window.value);
+    case 'businessDays':
+      return addBusinessDays(ms, window.value);
+    default:
+      return ms + window.value * DAY_MS;
+  }
+}
+
+/** Human-readable window, e.g. "45 days", "1 month", "15 business days". */
+export function describeWindow(window: ComplianceWindow): string {
+  const noun = window.unit === 'months' ? 'month' : window.unit === 'businessDays' ? 'business day' : 'day';
   return `${window.value} ${noun}${window.value === 1 ? '' : 's'}`;
 }
 
