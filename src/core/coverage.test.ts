@@ -44,7 +44,30 @@ describe('summarizeCoverage', () => {
     );
 
     expect(summary.brokersWithProof).toBe(1);
-    expect(summary.brokersInCatalog).toBe(3);
+    // broker-a and broker-b; DROP is in the catalog as a broker but is not one.
+    expect(summary.brokersInCatalog).toBe(2);
+  });
+
+  it('never counts the DROP connector as a broker worked individually', () => {
+    const summary = summarizeCoverage(
+      [
+        instance(DROP_CONNECTOR_ID, 'proof_captured', [
+          dropRequest('2026-05-01T00:00:00.000Z', [
+            { id: 'r', receivedAt: '2026-06-01T00:00:00.000Z', outcome: 'completed' }
+          ])
+        ]),
+        instance('broker-a', 'proof_captured')
+      ],
+      catalog,
+      NOW
+    );
+
+    // DROP shows up through dropStatus, not in the per-broker tallies.
+    expect(summary.dropStatus).toBe('completed');
+    expect(summary.brokersWithProof).toBe(1);
+    expect(summary.brokersStarted).toBe(1);
+    expect(summary.brokersInCatalog).toBe(2);
+    expect(summary.headline).toContain('plus 1 verified individually');
   });
 
   it('counts a broker as proven only once evidence is captured', () => {

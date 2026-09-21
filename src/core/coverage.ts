@@ -148,8 +148,15 @@ export function summarizeCoverage(
   catalog: ConnectorDefinition[],
   now: number = Date.now()
 ): CoverageSummary {
+  // DROP is filed under 'broker' in the catalog so it sorts with the brokers
+  // it reaches, but it is one request to the state, not a broker worked
+  // individually. Counting it here would inflate the catalog by one and, once
+  // proof is captured, claim a "verified individually" broker that does not
+  // exist. DROP contributes to coverage only via dropStatus.
   const brokerIds = new Set(
-    catalog.filter((definition) => definition.category === 'broker').map((definition) => definition.id)
+    catalog
+      .filter((definition) => definition.category === 'broker' && definition.id !== DROP_CONNECTOR_ID)
+      .map((definition) => definition.id)
   );
 
   const brokerInstances = instances.filter((instance) => brokerIds.has(instance.connectorId));
