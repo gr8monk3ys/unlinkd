@@ -37,6 +37,21 @@ re-verified the steps against the provider — not on unrelated edits.
 These thresholds live in `scripts/connectors_check_freshness.mjs` and
 `src/connectors/catalog.freshness.test.ts`.
 
+## Compliance profiles
+
+The statutory deadline profiles in `src/core/compliance/profiles.ts` carry the
+same kind of perishable claim as connector steps, and follow the same contract:
+
+- Each profile has a `lastReviewed` date and a `sourceUrl`.
+- **Half-yearly (180 days):** re-check the response windows against the statute
+  or regulator guidance. `PROFILE_REVIEW_CADENCE_DAYS` sets the threshold.
+- Past the cadence, deadlines computed from that profile still render, but are
+  labelled unverified in the UI rather than presented as settled.
+
+A wrong deadline is worse than a missing one: a user may act on it. Update
+`lastReviewed` only after re-reading the source, and record the citation on each
+basis so the figure can be checked from the UI.
+
 ## Checks
 
 ```bash
