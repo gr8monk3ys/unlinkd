@@ -139,4 +139,54 @@ export interface ConnectorInstance {
   nextCheckAt?: string;
   evidence: EvidenceMeta[];
   notes?: string;
+  /** Optional so vaults written before request tracking load unchanged. */
+  requests?: RemovalRequest[];
+}
+
+export type RequestChannel = 'web_form' | 'email' | 'postal' | 'phone' | 'in_app';
+
+export type RequestOutcome =
+  | 'acknowledged'
+  | 'completed'
+  | 'refused'
+  | 'identity_required'
+  | 'partial';
+
+export interface RequestResponse {
+  id: string;
+  receivedAt: string;
+  outcome: RequestOutcome;
+  note?: string;
+  /** Links to an EvidenceMeta record holding the reply itself. */
+  evidenceId?: string;
+  /**
+   * The controller invoked its statutory extension. Recorded separately from
+   * the outcome because an extension is a claim about the clock, not a result.
+   */
+  extensionClaimed?: boolean;
+}
+
+/**
+ * One removal/erasure request sent to a connector's operator.
+ *
+ * Stores only facts. The due date is computed from these by
+ * ./compliance/deadlines, never persisted — a stored deadline silently goes
+ * stale when a compliance profile is corrected.
+ */
+export interface RemovalRequest {
+  id: string;
+  /** Compliance profile the deadline is computed under, e.g. 'gdpr'. */
+  profileId: string;
+  /** The specific right exercised, e.g. 'gdpr.art17'. */
+  basisId: string;
+  channel: RequestChannel;
+  /** The address or URL actually used, kept for the escalation record. */
+  recipient?: string;
+  /** The fact the clock runs from. */
+  sentAt: string;
+  responses: RequestResponse[];
+  /** Set when the user knows the real deadline differs from the computed one. */
+  dueAtOverride?: string;
+  closedAt?: string;
+  notes?: string;
 }

@@ -18,8 +18,22 @@ function makeConnector(overrides: Partial<ConnectorDefinition> & { id: string })
 }
 
 describe('builtinConnectorCatalog', () => {
-  it('has 3 entries', () => {
-    expect(builtinConnectorCatalog).toHaveLength(3);
+  it('has 4 entries', () => {
+    expect(builtinConnectorCatalog).toHaveLength(4);
+  });
+
+  it('leads with California DROP, which reaches every registered broker at once', () => {
+    // Ordering is load-bearing: the fallback catalog is short, and a user
+    // scanning it should meet the highest-leverage action first rather than a
+    // single-broker opt-out.
+    expect(builtinConnectorCatalog[0]?.id).toBe('ca-drop-deletion');
+  });
+
+  it('gives every builtin connector a review date and at least one step', () => {
+    builtinConnectorCatalog.forEach((definition) => {
+      expect(Number.isFinite(Date.parse(definition.lastReviewed ?? ''))).toBe(true);
+      expect(definition.steps.length).toBeGreaterThan(0);
+    });
   });
 });
 

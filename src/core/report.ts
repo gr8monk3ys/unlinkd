@@ -1,6 +1,8 @@
 import type { ConnectorDefinition, ConnectorInstance, Persona } from './types';
 import type { VaultStateV1 } from './vault';
 import { connectorName, dueConnectorInstances } from './connectors';
+import { computeDeadline } from './compliance/deadlines';
+import { instanceRequests, requestOutcomeLabels } from './compliance/requests';
 import { scoreFinding, sortFindingsByPriority } from './scoring';
 
 export interface ReportOptions {
@@ -72,6 +74,47 @@ export function buildMarkdownReport(vault: VaultStateV1, options: ReportOptions)
           )}`
         );
       });
+  }
+  lines.push('');
+
+  // The request log is the part of this report an escalation actually rests on:
+  // what was asked, when, under which right, and what came back.
+  lines.push('## Removal Requests');
+  const withRequests = vault.connectorInstances.filter((instance) => instanceRequests(instance).length > 0);
+  if (withRequests.length === 0) {
+    lines.push('- (none recorded)');
+  } else {
+    withRequests.forEach((instance) => {
+      const persona = options.redacted ? '' : ` (${personaName(instance.personaId, vault.personas)})`;
+      lines.push(`### ${connectorName(instance.connectorId, options.connectorCatalog)}${persona}`);
+      instanceRequests(instance).forEach((request) => {
+        const computation = computeDeadline(request);
+        const cite = computation.basis?.citation ?? `${request.profileId}/${request.basisId}`;
+        lines.push(`- Sent ${fmtDate(request.sentAt)} under ${cite} via ${request.channel}`);
+        // A recipient can be an identifying address, so it follows the same
+        // redaction rule as persona names.
+        if (request.recipient && !options.redacted) {
+          lines.push(`  - To: ${request.recipient}`);
+        }
+        lines.push(
+          computation.dueAt
+            ? `  - Deadline: ${computation.dueAt} (${computation.status}${computation.stale ? ', profile unverified' : ''})`
+            : `  - Deadline: not computable (${computation.explanation})`
+        );
+        if (request.responses.length === 0) {
+          lines.push('  - No response recorded');
+        } else {
+          request.responses.forEach((response) => {
+            lines.push(
+              `  - ${fmtDate(response.receivedAt)}: ${requestOutcomeLabels[response.outcome]}${
+                response.extensionClaimed ? ' (extension claimed)' : ''
+              }`
+            );
+          });
+        }
+      });
+      lines.push('');
+    });
   }
   lines.push('');
 

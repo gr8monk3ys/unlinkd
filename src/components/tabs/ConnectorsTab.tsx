@@ -15,6 +15,9 @@ import {
   isConnectorStale
 } from '../../core/connectors';
 import { nextStates } from '../../core/workflow';
+import { RequestPanel } from '../RequestPanel';
+import type { NewRequestInput } from '../../core/compliance/requests';
+import type { RequestOutcome } from '../../core/types';
 
 export type { ConnectorCatalogMeta };
 
@@ -32,6 +35,13 @@ interface ConnectorsTabProps {
   onDeleteEvidence: (instanceId: string, evidenceId: string) => void;
   onUploadEvidence: (instanceId: string, file: File, kind: EvidenceKind, label: string) => Promise<boolean>;
   onDownloadEvidence: (meta: EvidenceMeta) => void;
+  onRecordRequest: (instanceId: string, input: NewRequestInput) => Promise<boolean>;
+  onRecordResponse: (
+    instanceId: string,
+    requestId: string,
+    outcome: RequestOutcome,
+    options?: { extensionClaimed?: boolean }
+  ) => Promise<boolean>;
 }
 
 type CategoryFilter = 'all' | ConnectorCategory;
@@ -139,7 +149,9 @@ function InstanceCard({
   onAddNoteEvidence,
   onDeleteEvidence,
   onUploadEvidence,
-  onDownloadEvidence
+  onDownloadEvidence,
+  onRecordRequest,
+  onRecordResponse
 }: {
   instance: ConnectorInstance;
   def: ConnectorDefinition | null;
@@ -150,6 +162,13 @@ function InstanceCard({
   onDeleteEvidence: (instanceId: string, evidenceId: string) => void;
   onUploadEvidence: (instanceId: string, file: File, kind: EvidenceKind, label: string) => Promise<boolean>;
   onDownloadEvidence: (meta: EvidenceMeta) => void;
+  onRecordRequest: (instanceId: string, input: NewRequestInput) => Promise<boolean>;
+  onRecordResponse: (
+    instanceId: string,
+    requestId: string,
+    outcome: RequestOutcome,
+    options?: { extensionClaimed?: boolean }
+  ) => Promise<boolean>;
 }): React.JSX.Element {
   const [expanded, setExpanded] = useState(false);
   // Evidence form state is per-card: sharing it across cards attached notes to
@@ -213,6 +232,12 @@ function InstanceCard({
           ) : null}
 
           {def ? <StepChecklist def={def} instance={instance} /> : null}
+
+          <RequestPanel
+            instance={instance}
+            onRecordRequest={onRecordRequest}
+            onRecordResponse={onRecordResponse}
+          />
 
           <section>
             <h4 style={{ margin: '8px 0 4px 0' }}>Evidence</h4>
@@ -540,6 +565,8 @@ export function ConnectorsTab(props: ConnectorsTabProps): React.JSX.Element {
                       onDeleteEvidence={props.onDeleteEvidence}
                       onUploadEvidence={props.onUploadEvidence}
                       onDownloadEvidence={props.onDownloadEvidence}
+                      onRecordRequest={props.onRecordRequest}
+                      onRecordResponse={props.onRecordResponse}
                     />
                   );
                 })}
