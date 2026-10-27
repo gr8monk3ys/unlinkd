@@ -47,6 +47,9 @@ same kind of perishable claim as connector steps, and follow the same contract:
   or regulator guidance. `PROFILE_REVIEW_CADENCE_DAYS` sets the threshold.
 - Past the cadence, deadlines computed from that profile still render, but are
   labelled unverified in the UI rather than presented as settled.
+- **Hard ceiling (365 days):** a profile older than this, with a missing,
+  malformed or future `lastReviewed`, or without an `https` `sourceUrl`, fails
+  CI via `src/core/compliance/profiles.freshness.test.ts`.
 
 A wrong deadline is worse than a missing one: a user may act on it. Update
 `lastReviewed` only after re-reading the source, and record the citation on each
@@ -59,7 +62,8 @@ basis so the figure can be checked from the UI.
 # warns on connectors past the 90-day cadence.
 node scripts/connectors_check_freshness.mjs
 
-# The same invariants run as part of the test suite.
+# The same invariants, plus the compliance-profile gate, run as part of the
+# test suite.
 npm test
 ```
 
