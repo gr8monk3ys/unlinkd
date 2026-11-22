@@ -3,6 +3,7 @@ import * as ed from '@noble/ed25519';
 import { sha512 } from '@noble/hashes/sha2.js';
 import { fetchConnectorFeed, parseConnectorCatalogFeedV1, parseConnectorDefinitions } from './feed';
 import type { ConnectorDefinition } from '../core/types';
+import { fromPartial } from '@total-typescript/shoehorn';
 
 ed.hashes.sha512 = sha512;
 
@@ -21,11 +22,11 @@ function mockFetch(map: Record<string, MockResponse>): typeof fetch {
     const url = String(input);
     const entry = map[url];
     const ok = entry?.ok ?? false;
-    return {
+    return fromPartial<Response>({
       ok,
       status: entry?.status ?? (ok ? 200 : 404),
       text: async () => entry?.body ?? ''
-    } as Response;
+    });
   }) as unknown as typeof fetch;
 }
 

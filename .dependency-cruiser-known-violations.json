@@ -1,0 +1,128 @@
+[
+  {
+    "type": "dependency",
+    "from": "src/components/RequestPanel.tsx",
+    "to": "src/core/compliance/deadlines.ts",
+    "unresolvedTo": "../core/compliance/deadlines",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "entrypoint-boundary-across-packages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/RequestPanel.tsx",
+    "to": "src/core/compliance/profiles.ts",
+    "unresolvedTo": "../core/compliance/profiles",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "entrypoint-boundary-across-packages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/RequestPanel.tsx",
+    "to": "src/core/compliance/requests.ts",
+    "unresolvedTo": "../core/compliance/requests",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "entrypoint-boundary-across-packages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/RequestWorklist.test.tsx",
+    "to": "src/core/compliance/deadlines.ts",
+    "unresolvedTo": "../core/compliance/deadlines",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "entrypoint-boundary-across-packages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/RequestWorklist.test.tsx",
+    "to": "src/core/compliance/profiles.ts",
+    "unresolvedTo": "../core/compliance/profiles",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "entrypoint-boundary-across-packages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/RequestWorklist.tsx",
+    "to": "src/core/compliance/requests.ts",
+    "unresolvedTo": "../core/compliance/requests",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "entrypoint-boundary-across-packages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/useRemovalRequests.ts",
+    "to": "src/core/compliance/requests.ts",
+    "unresolvedTo": "../core/compliance/requests",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "entrypoint-boundary-across-packages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/useUnlinkdApp.ts",
+    "to": "src/core/compliance/deadlines.ts",
+    "unresolvedTo": "../core/compliance/deadlines",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "entrypoint-boundary-across-packages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/useUnlinkdApp.ts",
+    "to": "src/core/import/accounts.ts",
+    "unresolvedTo": "../core/import/accounts",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "entrypoint-boundary-across-packages"
+    }
+  }
+]
