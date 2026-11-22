@@ -1,7 +1,7 @@
 {
   "name": "unlinkd",
   "version": "1.0.0",
-  "description": "Local-first workspace for getting removed from the internet and proving it: opt-out checklists, encrypted evidence capture, and a tamper-evident record of every request \u2014 entirely in your browser.",
+  "description": "Local-first workspace for getting removed from the internet and proving it: opt-out checklists, encrypted evidence capture, and a tamper-evident record of every request — entirely in your browser.",
   "main": "index.js",
   "directories": {
     "doc": "docs"
@@ -57,7 +57,7 @@
     "@typescript-eslint/eslint-plugin": "^8.55.0",
     "@typescript-eslint/parser": "^8.55.0",
     "@vitejs/plugin-react": "^5.1.4",
-    "dependency-cruiser": "^18.8.0",
+    "dependency-cruiser": "^17.4.3",
     "eslint": "^9.39.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.0",
