@@ -255,7 +255,9 @@ test('tracks a California DROP request against its 90-day window', async ({ page
   await page.getByRole('button', { name: /California DROP/ }).first().click();
   await page.getByLabel('Regime').selectOption('ca_drop');
   await page.getByLabel('Sent via').selectOption('web_form');
-  await page.getByLabel('Date sent').fill('2026-08-20');
+  // Sent 10 days ago, so the request stays inside its 90-day window on any run date.
+  const sent = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  await page.getByLabel('Date sent').fill(sent);
   await page.getByRole('button', { name: 'Record request' }).click();
 
   await switchToTab(page, 'Dashboard');
