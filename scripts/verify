@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Fast gate that Claude Code runs before a session can finish: `npm run check`
+# minus the Vite production build. No browser or deploy needed.
+# The full check before a PR is still `npm run check` (CI adds Playwright e2e).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+npm ci
+npm run lint
+npm run typecheck
+npm run depcruise
+npm test
